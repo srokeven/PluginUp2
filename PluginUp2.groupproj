@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{D6F06A1D-AFCA-4B13-B29B-881C01BA361A}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="PluginUp2Util.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="PluginUp2Util">
+        <MSBuild Projects="PluginUp2Util.dproj"/>
+    </Target>
+    <Target Name="PluginUp2Util:Clean">
+        <MSBuild Projects="PluginUp2Util.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PluginUp2Util:Make">
+        <MSBuild Projects="PluginUp2Util.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="PluginUp2Util"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="PluginUp2Util:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="PluginUp2Util:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
