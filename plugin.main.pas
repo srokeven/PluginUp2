@@ -7,15 +7,18 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, plugin.controller.databases,
   plugin.controller.tables, uUtils, Vcl.StdCtrls, plugin.controller.links,
   plugin.controller.schemas, plugin.cadastros, plugin.servico.manutencao,
-  cxGraphics, cxLookAndFeels, cxLookAndFeelPainters, Vcl.Menus, cxButtons;
+  cxGraphics, cxLookAndFeels, cxLookAndFeelPainters, Vcl.Menus, cxButtons,
+  plugin.clonar;
 
 type
   TfmrMainPlugin = class(TForm)
     btnServicos: TcxButton;
     btnConfiguracoes: TcxButton;
+    btnMigracao: TcxButton;
     procedure FormCreate(Sender: TObject);
     procedure btnServicosClick(Sender: TObject);
     procedure btnConfiguracoesClick(Sender: TObject);
+    procedure btnMigracaoClick(Sender: TObject);
   private
   public
   end;
@@ -34,6 +37,16 @@ begin
     fmCadastros.ShowModal;
   finally
     fmCadastros.Free;
+  end;
+end;
+
+procedure TfmrMainPlugin.btnMigracaoClick(Sender: TObject);
+begin
+  fmClonarBancoDados := TfmClonarBancoDados.Create(Self);
+  try
+    fmClonarBancoDados.ShowModal;
+  finally
+    fmClonarBancoDados.Free;
   end;
 end;
 

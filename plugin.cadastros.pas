@@ -1906,7 +1906,7 @@ begin
   try
     ldmCon.Conectar(lConexao.ToJSON);
     if ldmCon.Conectado then
-      ldmCon.Execute('update SINCRONIZACAO_PLUGIN set '+TMenuItem(Sender).Caption+' = dateadd(year, -10, current_timestamp)', ldmCon.Conexao);
+      ldmCon.Execute('update SINCRONIZACAO_PLUGIN set '+TMenuItem(Sender).Hint+' = dateadd(year, -10, current_timestamp)', ldmCon.Conexao);
   finally
     lConexao.Free;
     ldmCon.Free;

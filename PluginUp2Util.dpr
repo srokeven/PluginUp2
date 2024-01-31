@@ -18,7 +18,8 @@ uses
   uApi in 'utils\uApi.pas',
   udmAPI in 'utils\udmAPI.pas' {dmAPI: TDataModule},
   plugin.selecao.tabela.join in 'plugin.selecao.tabela.join.pas' {fmSelecionarTabelaJoin},
-  plugin.monta.where in 'plugin.monta.where.pas' {fmMontaWhere};
+  plugin.monta.where in 'plugin.monta.where.pas' {fmMontaWhere},
+  plugin.clonar in 'plugin.clonar.pas' {fmClonarBancoDados};
 
 {$R *.res}
 

@@ -56,7 +56,7 @@ object fmCadastros: TfmCadastros
     Top = 0
     Width = 1099
     Height = 588
-    ActivePage = tsCadLinksCampos
+    ActivePage = tsCadBancoDados
     Align = alClient
     TabOrder = 1
     object tsCadBancoDados: TTabSheet
@@ -470,7 +470,6 @@ object fmCadastros: TfmCadastros
             Colors.PressedText = clRed
             TabOrder = 1
             OnClick = btnRemoverTabelasClick
-            ExplicitLeft = 84
           end
           object btnVoltarTabela: TButton
             AlignWithMargins = True
@@ -482,7 +481,6 @@ object fmCadastros: TfmCadastros
             Caption = 'Cancelar'
             TabOrder = 2
             OnClick = btnVoltarTabelaClick
-            ExplicitLeft = 603
           end
         end
       end
@@ -1026,7 +1024,6 @@ object fmCadastros: TfmCadastros
             Caption = 'Alterar'
             TabOrder = 1
             OnClick = btnAlterarLinkClick
-            ExplicitLeft = 84
           end
           object btnExportarSQL: TButton
             AlignWithMargins = True
@@ -1085,7 +1082,6 @@ object fmCadastros: TfmCadastros
             Colors.PressedText = clRed
             TabOrder = 4
             OnClick = btnRemoveLinkClick
-            ExplicitLeft = 165
           end
         end
       end
@@ -2214,102 +2210,127 @@ object fmCadastros: TfmCadastros
     Top = 448
     object CLIENTES1: TMenuItem
       Caption = 'CLIENTES'
+      Hint = 'CLIENTES'
       OnClick = VENDEDORES1Click
     end
     object FORNECEDORES1: TMenuItem
       Caption = 'FORNECEDORES'
+      Hint = 'FORNECEDORES'
       OnClick = VENDEDORES1Click
     end
     object GRUPOS1: TMenuItem
       Caption = 'GRUPOS'
+      Hint = 'GRUPOS'
       OnClick = VENDEDORES1Click
     end
     object GRUPOSCLIENTE1: TMenuItem
       Caption = 'GRUPOSCLIENTE'
+      Hint = 'GRUPOSCLIENTE'
       OnClick = VENDEDORES1Click
     end
     object MARCAS1: TMenuItem
       Caption = 'MARCAS'
+      Hint = 'MARCAS'
       OnClick = VENDEDORES1Click
     end
     object SUBGRUPOS1: TMenuItem
       Caption = 'SUBGRUPOS'
+      Hint = 'SUBGRUPOS'
       OnClick = VENDEDORES1Click
     end
     object PRODUTOS1: TMenuItem
       Caption = 'PRODUTOS'
+      Hint = 'PRODUTOS'
       OnClick = VENDEDORES1Click
     end
     object CAIXAS1: TMenuItem
       Caption = 'CAIXAS'
+      Hint = 'CAIXAS'
       OnClick = VENDEDORES1Click
     end
     object CAIXATIPOSMOVIMENTOS1: TMenuItem
       Caption = 'CAIXA_TIPOS_MOVIMENTOS'
+      Hint = 'CAIXA_TIPOS_MOVIMENTOS'
       OnClick = VENDEDORES1Click
     end
     object DESPESAS1: TMenuItem
       Caption = 'DESPESAS'
+      Hint = 'DESPESAS'
       OnClick = VENDEDORES1Click
     end
     object EQUIPAMENTOS1: TMenuItem
       Caption = 'EQUIPAMENTOS'
+      Hint = 'EQUIPAMENTOS'
       OnClick = VENDEDORES1Click
     end
     object EQUIPAMENTOSCLIENTES1: TMenuItem
       Caption = 'EQUIPAMENTOS_CLIENTES'
+      Hint = 'EQUIPAMENTOS_CLIENTES'
       OnClick = VENDEDORES1Click
     end
     object ESTOQUE1: TMenuItem
       Caption = 'ESTOQUE'
+      Hint = 'ESTOQUE'
       OnClick = VENDEDORES1Click
     end
     object FILIAIS1: TMenuItem
       Caption = 'FILIAIS'
+      Hint = 'FILIAIS'
       OnClick = VENDEDORES1Click
     end
     object PARCELASPRAZOS1: TMenuItem
       Caption = 'PARCELAS_PRAZOS'
+      Hint = 'PARCELAS_PRAZOS'
       OnClick = VENDEDORES1Click
     end
     object PRAZOS1: TMenuItem
       Caption = 'PRAZOS'
-      OnClick = VENDEDORES1Click
-    end
-    object REGRASTRIBUTACAO1: TMenuItem
-      Caption = 'REGRASTRIBUTACAO'
-      OnClick = VENDEDORES1Click
-    end
-    object SERVICOS1: TMenuItem
-      Caption = 'SERVICOS'
-      OnClick = VENDEDORES1Click
-    end
-    object ECNICOS1: TMenuItem
-      Caption = 'TECNICOS'
-      OnClick = VENDEDORES1Click
-    end
-    object IPOSDOCUMENTOS1: TMenuItem
-      Caption = 'TIPOS_DOCUMENTOS'
-      OnClick = VENDEDORES1Click
-    end
-    object IPOSPAGAMENTOS1: TMenuItem
-      Caption = 'TIPOS_PAGAMENTOS'
-      OnClick = VENDEDORES1Click
-    end
-    object IPOESTOQUEMOV1: TMenuItem
-      Caption = 'TIPO_ESTOQUE_MOV'
-      OnClick = VENDEDORES1Click
-    end
-    object UNIDADEMEDIDA1: TMenuItem
-      Caption = 'UNIDADE_MEDIDA'
-      OnClick = VENDEDORES1Click
-    end
-    object VENDEDORES1: TMenuItem
-      Caption = 'VENDEDORES'
+      Hint = 'PRAZOS'
       OnClick = VENDEDORES1Click
     end
     object PRODUTOSFORNECEDORES1: TMenuItem
       Caption = 'PRODUTOS_FORNECEDORES'
+      Hint = 'PRODUTOS_FORNECEDORES'
+      OnClick = VENDEDORES1Click
+    end
+    object REGRASTRIBUTACAO1: TMenuItem
+      Caption = 'REGRASTRIBUTACAO'
+      Hint = 'REGRASTRIBUTACAO'
+      OnClick = VENDEDORES1Click
+    end
+    object SERVICOS1: TMenuItem
+      Caption = 'SERVICOS'
+      Hint = 'SERVICOS'
+      OnClick = VENDEDORES1Click
+    end
+    object ECNICOS1: TMenuItem
+      Caption = 'TECNICOS'
+      Hint = 'TECNICOS'
+      OnClick = VENDEDORES1Click
+    end
+    object IPOSDOCUMENTOS1: TMenuItem
+      Caption = 'TIPOS_DOCUMENTOS'
+      Hint = 'TIPOS_DOCUMENTOS'
+      OnClick = VENDEDORES1Click
+    end
+    object IPOSPAGAMENTOS1: TMenuItem
+      Caption = 'TIPOS_PAGAMENTOS'
+      Hint = 'TIPOS_PAGAMENTOS'
+      OnClick = VENDEDORES1Click
+    end
+    object IPOESTOQUEMOV1: TMenuItem
+      Caption = 'TIPO_ESTOQUE_MOV'
+      Hint = 'TIPO_ESTOQUE_MOV'
+      OnClick = VENDEDORES1Click
+    end
+    object UNIDADEMEDIDA1: TMenuItem
+      Caption = 'UNIDADE_MEDIDA'
+      Hint = 'UNIDADE_MEDIDA'
+      OnClick = VENDEDORES1Click
+    end
+    object VENDEDORES1: TMenuItem
+      Caption = 'VENDEDORES'
+      Hint = 'VENDEDORES'
       OnClick = VENDEDORES1Click
     end
   end
@@ -2318,42 +2339,52 @@ object fmCadastros: TfmCadastros
     Top = 448
     object BCAIXA1: TMenuItem
       Caption = 'TB_CAIXA'
+      Hint = 'TB_CAIXA'
       OnClick = BOPERADOR1Click
     end
     object BFORMAPAGAMENTO1: TMenuItem
       Caption = 'TB_FORMA_PAGAMENTO'
+      Hint = 'TB_FORMA_PAGAMENTO'
       OnClick = BOPERADOR1Click
     end
     object BFORNECEDOR1: TMenuItem
       Caption = 'TB_FORNECEDOR'
+      Hint = 'TB_FORNECEDOR'
       OnClick = BOPERADOR1Click
     end
     object BGRUPO1: TMenuItem
       Caption = 'TB_GRUPO'
+      Hint = 'TB_GRUPO'
       OnClick = BOPERADOR1Click
     end
     object BMARCA1: TMenuItem
       Caption = 'TB_MARCA'
+      Hint = 'TB_MARCA'
       OnClick = BOPERADOR1Click
     end
     object BPESSOA1: TMenuItem
       Caption = 'TB_PESSOA'
+      Hint = 'TB_PESSOA'
       OnClick = BOPERADOR1Click
     end
     object BPRODUTO1: TMenuItem
       Caption = 'TB_PRODUTO'
+      Hint = 'TB_PRODUTO'
       OnClick = BOPERADOR1Click
     end
     object BUNIDADE1: TMenuItem
       Caption = 'TB_UNIDADE'
+      Hint = 'TB_UNIDADE'
       OnClick = BOPERADOR1Click
     end
     object BOPERADOR1: TMenuItem
       Caption = 'TB_OPERADOR'
+      Hint = 'TB_OPERADOR'
       OnClick = BOPERADOR1Click
     end
     object BRELACIONAR1: TMenuItem
       Caption = 'TB_RELACIONAR'
+      Hint = 'TB_RELACIONAR'
       OnClick = BOPERADOR1Click
     end
   end

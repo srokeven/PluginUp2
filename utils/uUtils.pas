@@ -16,6 +16,7 @@ uses
   function DirBancoDeDados: string;
   function DirTabelas: string;
   function DirSchemas: string;
+  function DirSchemasMigracao: string;
   function DirConsultas: string;
   function DirConsultasPendentes: string;
   function DirConsultasHistorico: string;
@@ -161,6 +162,9 @@ begin
   if not (DirectoryExists(DirSchemas)) then
     ForceDirectories(DirSchemas);
 
+  if not (DirectoryExists(DirSchemasMigracao)) then
+    ForceDirectories(DirSchemasMigracao);
+
   if not (DirectoryExists(DirConsultas)) then
     ForceDirectories(DirConsultas);
 
@@ -189,6 +193,11 @@ end;
 function DirSchemas: string;
 begin
   Result := IncludeTrailingPathDelimiter(DirLocal)+'schemas';
+end;
+
+function DirSchemasMigracao: string;
+begin
+  Result := IncludeTrailingPathDelimiter(DirLocal)+'schemas_migracao';
 end;
 
 function DirConsultas: string;
