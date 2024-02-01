@@ -29,6 +29,11 @@ type
     Bevel1: TBevel;
     Label3: TLabel;
     edDataLog: TcxDateEdit;
+    chkAutoRefresh: TCheckBox;
+    tmAutoRefresh: TTimer;
+    chkAutoRefreshLog: TCheckBox;
+    chkLimpaLog: TCheckBox;
+    tmAutoRefreshLog: TTimer;
     procedure btnTesteAtualClick(Sender: TObject);
     procedure btnIniciarDebugClick(Sender: TObject);
     procedure btnStatusClick(Sender: TObject);
@@ -37,6 +42,10 @@ type
     procedure btnLogClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure btnListaLogsClick(Sender: TObject);
+    procedure tmAutoRefreshTimer(Sender: TObject);
+    procedure tmAutoRefreshLogTimer(Sender: TObject);
+    procedure chkAutoRefreshClick(Sender: TObject);
+    procedure chkAutoRefreshLogClick(Sender: TObject);
   private
     FdmMonitoramento: TdmMonitoramento;
     FSkip: integer;
@@ -92,11 +101,20 @@ end;
 
 procedure TfmServicos.btnLogClick(Sender: TObject);
 begin
+  tmAutoRefreshLog.Enabled := chkAutoRefreshLog.Checked;
   if Assigned(FdmMonitoramento) then
   begin
-    mmResposta.Lines.Add(FdmMonitoramento.GetLog(edDataLog.Date));
+    if chkLimpaLog.Checked then
+      mmResposta.Lines.Text := FdmMonitoramento.GetLog(edDataLog.Date)
+    else
+      mmResposta.Lines.Add(FdmMonitoramento.GetLog(edDataLog.Date));
   end else
-    mmResposta.Lines.Add(Post(edHost.Text, edPorta.Text, '/log/'+FormatDateTime('ddmmyyyy', edDataLog.Date)));
+  begin
+    if chkLimpaLog.Checked then
+      mmResposta.Lines.Text := Post(edHost.Text, edPorta.Text, '/log/'+FormatDateTime('ddmmyyyy', edDataLog.Date))
+    else
+      mmResposta.Lines.Add(Post(edHost.Text, edPorta.Text, '/log/'+FormatDateTime('ddmmyyyy', edDataLog.Date)));
+  end;
 end;
 
 procedure TfmServicos.btnPararClick(Sender: TObject);
@@ -111,6 +129,8 @@ end;
 
 procedure TfmServicos.btnStatusClick(Sender: TObject);
 begin
+  tmAutoRefresh.Enabled := chkAutoRefresh.Checked;
+
   if Assigned(FdmMonitoramento) then
   begin
     mmResposta.Lines.Add(FdmMonitoramento.GetStatus);
@@ -121,6 +141,20 @@ end;
 procedure TfmServicos.btnTesteAtualClick(Sender: TObject);
 begin
   FdmMonitoramento := TdmMonitoramento.Create(nil);
+end;
+
+procedure TfmServicos.chkAutoRefreshClick(Sender: TObject);
+begin
+  if tmAutoRefresh.Enabled then
+    tmAutoRefresh.Enabled := False;
+  chkAutoRefreshLog.Checked := False;
+end;
+
+procedure TfmServicos.chkAutoRefreshLogClick(Sender: TObject);
+begin
+  if tmAutoRefreshLog.Enabled then
+    tmAutoRefreshLog.Enabled := False;
+  chkAutoRefresh.Checked := False;
 end;
 
 procedure TfmServicos.FormShow(Sender: TObject);
@@ -269,6 +303,28 @@ begin
   finally
     lAPI.Free;
   end;
+end;
+
+procedure TfmServicos.tmAutoRefreshLogTimer(Sender: TObject);
+begin
+  tmAutoRefreshLog.Enabled := False;
+  if Assigned(FdmMonitoramento) then
+  begin
+    mmResposta.Lines.Add(FdmMonitoramento.GetLog(edDataLog.Date));
+  end else
+    mmResposta.Lines.Add(Post(edHost.Text, edPorta.Text, '/log/'+FormatDateTime('ddmmyyyy', edDataLog.Date)));
+  tmAutoRefreshLog.Enabled := True;
+end;
+
+procedure TfmServicos.tmAutoRefreshTimer(Sender: TObject);
+begin
+  tmAutoRefresh.Enabled := False;
+  if Assigned(FdmMonitoramento) then
+  begin
+    mmResposta.Lines.Add(FdmMonitoramento.GetStatus);
+  end else
+  mmResposta.Lines.Add(Get(edHost.Text, edPorta.Text, 'status'));
+  tmAutoRefresh.Enabled := True;
 end;
 
 end.

@@ -240,7 +240,7 @@ begin
   for I := 0 to FListaSchemas.Count - 1 do
   begin
     FListaSchemas[I].Atualizar;
-    FListaSchemas[I].Mover;
+    FListaSchemas[I].MoverArquivoAtualizado;
   end;
   FTarefa.CheckCanceled;
   SetStatus(psIniciado);

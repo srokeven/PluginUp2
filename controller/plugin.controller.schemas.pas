@@ -7,12 +7,20 @@ uses System.JSON, System.SysUtils, System.Classes, System.Generics.Collections,
   plugin.datamodule, System.IOUtils, Vcl.FileCtrl, FileSearchUnit;
 
 type
+  TPluginTabelaParaAtualizar = class
+    SqlDataAtualizar: string;
+    TabelaOrigem: string;
+    TabelaDestino: string;
+    CaminhoArquivo: string;
+    class function Novo(ASql, ATabelaOrigem, ATabelaDestino, ACaminhoArquivo: string): TPluginTabelaParaAtualizar;
+  end;
   TPluginSchemas = class
   private
     FBaseOrigem: TPluginDatabases;
     FBaseDestino: TPluginDatabases;
     FLinks: TObjectList<TPluginLink>;
-    FFilaAtualizacaoData: TStringList;
+    FFilaAtualizacaoData: TObjectList<TPluginTabelaParaAtualizar>;
+    FListaTabelasConsultadas: TObjectList<TPluginTabelaParaAtualizar>;
   public
     constructor Create;
     destructor Destroy; override;
@@ -36,8 +44,9 @@ type
     function Executar: boolean;
     function Atualizar: boolean;
     function Mover: boolean;
+    function MoverArquivoAtualizado: boolean;
 
-    procedure FilaAtualizacaoDatas(ASQL: string);
+    procedure FilaAtualizacaoDatas(ATabelaAtualizada: TPluginTabelaParaAtualizar);
 
     function TesteSelect: string;
 
@@ -78,7 +87,8 @@ end;
 constructor TPluginSchemas.Create;
 begin
   FLinks := TObjectList<TPluginLink>.Create;
-  FFilaAtualizacaoData := TStringList.Create;
+  FListaTabelasConsultadas := TObjectList<TPluginTabelaParaAtualizar>.Create;
+  FFilaAtualizacaoData := TObjectList<TPluginTabelaParaAtualizar>.Create;
 end;
 
 procedure TPluginSchemas.DeleteLink(ALink: TPluginLink);
@@ -100,14 +110,14 @@ begin
   if Assigned(FBaseDestino) then
     FBaseDestino.Free;
   FLinks.Free;
+  FListaTabelasConsultadas.Free;
   FFilaAtualizacaoData.Free;
   inherited;
 end;
 
-procedure TPluginSchemas.FilaAtualizacaoDatas(ASQL: string);
+procedure TPluginSchemas.FilaAtualizacaoDatas(ATabelaAtualizada: TPluginTabelaParaAtualizar);
 begin
-  if not (ASQL.IsEmpty) then
-    FFilaAtualizacaoData.Add(ASQL);
+  FFilaAtualizacaoData.Add(ATabelaAtualizada);
 end;
 
 function TPluginSchemas.GetLink(AIndex: integer): TPluginLink;
@@ -140,6 +150,7 @@ end;
 function TPluginSchemas.Consultar: boolean;
 var
   lConexaoOrigem: TdmConexao;
+  lSqlAtualizaDatas, lCaminhoArquivo: string;
   I: Integer;
 begin
   Result := False;
@@ -152,12 +163,16 @@ begin
       //Montar SQLs
       for I := 0 to FLinks.Count - 1 do
       begin
+        lSqlAtualizaDatas := FLinks[I].AtualizarDataConsulta;;
         if lConexaoOrigem.ConsultarESalvar(FLinks[I].GetSelect,
                                            FLinks[I].TabelaOrigem,
                                            LerJson(FBaseOrigem.Salvar, 'nome'),
                                            FLinks[I].TabelaDestino,
-                                           LerJson(FBaseDestino.Salvar, 'nome')) then
-          FilaAtualizacaoDatas(FLinks[I].AtualizarDataConsulta);
+                                           LerJson(FBaseDestino.Salvar, 'nome'),
+                                           lCaminhoArquivo) then
+        begin
+          FListaTabelasConsultadas.Add(TPluginTabelaParaAtualizar.Novo(lSqlAtualizaDatas, FLinks[I].TabelaOrigem, FLinks[I].TabelaDestino, lCaminhoArquivo))
+        end;
       end;
       Result := True;
     end;
@@ -170,6 +185,7 @@ function TPluginSchemas.Executar: boolean;
 var
   lConexaoDestino: TdmConexao;
   I: Integer;
+  O: Integer;
 begin
   //Conectar banco origem
   lConexaoDestino := TdmConexao.Create(nil);
@@ -191,7 +207,16 @@ begin
           Break;
         end else
         begin
-          Result := True;
+          for O := 0 to FListaTabelasConsultadas.Count - 1 do
+          begin
+            if (FListaTabelasConsultadas[O].TabelaOrigem = FLinks[I].TabelaOrigem) and
+              (FListaTabelasConsultadas[O].TabelaDestino = FLinks[I].TabelaDestino) then
+            begin
+              FilaAtualizacaoDatas(FListaTabelasConsultadas[O]);
+              Result := True;
+              Break;
+            end;
+          end;
         end;
       end;
     end;
@@ -215,7 +240,7 @@ begin
       //Atualizar datas
       for I := 0 to FFilaAtualizacaoData.Count - 1 do
       begin
-        lConexaoOrigem.Execute(FFilaAtualizacaoData[I], lConexaoOrigem.ConexaoOrigem);
+        lConexaoOrigem.Execute(FFilaAtualizacaoData[I].SqlDataAtualizar, lConexaoOrigem.ConexaoOrigem);
       end;
       Result := True;
     end;
@@ -242,6 +267,18 @@ begin
     Result := True;
   finally
     lListaArquivos.Free;
+  end;
+end;
+
+function TPluginSchemas.MoverArquivoAtualizado: boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := 0 to FFilaAtualizacaoData.Count - 1 do
+  begin
+    TFile.Move(FFilaAtualizacaoData[I].CaminhoArquivo,
+               IncludeTrailingPathDelimiter(DirConsultasHistorico)+ExtractFileName(FFilaAtualizacaoData[I].CaminhoArquivo)+'_'+FormatDateTime('ddmmyyhhnnss',Now));
   end;
 end;
 
@@ -363,6 +400,17 @@ begin
   begin
     Result := Result + FLinks[I].GetSelect + sLineBreak;
   end;
+end;
+
+{ TPluginTabelaParaAtualizar }
+
+class function TPluginTabelaParaAtualizar.Novo(ASql, ATabelaOrigem, ATabelaDestino, ACaminhoArquivo: string): TPluginTabelaParaAtualizar;
+begin
+  Result := TPluginTabelaParaAtualizar.Create;
+  Result.SqlDataAtualizar := ASql;
+  Result.TabelaOrigem := ATabelaOrigem;
+  Result.TabelaDestino := ATabelaDestino;
+  Result.CaminhoArquivo := ACaminhoArquivo;
 end;
 
 end.

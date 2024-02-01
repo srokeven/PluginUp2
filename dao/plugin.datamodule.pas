@@ -38,7 +38,7 @@ type
     function Conectado: boolean;
 
     function ConsultarESalvar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino,
-      ABancoDestino: string): boolean;
+      ABancoDestino: string; out OCaminhoArquivo: string): boolean;
     function ExecutarDestino(ASqlInsert, AEstrutura, ATabelaOrigem, ABancoOrigem,
       ATabelaDestino, ABancoDestino: string): boolean;
 
@@ -135,7 +135,8 @@ begin
   end;
 end;
 
-function TdmConexao.ConsultarESalvar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino, ABancoDestino: string): boolean;
+function TdmConexao.ConsultarESalvar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino,
+  ABancoDestino: string; out OCaminhoArquivo: string): boolean;
 var
   lNomeArquivo, lDiretorioArquivo: string;
   lListaArquivos, lLinasArquivo: TStringList;
@@ -145,8 +146,9 @@ begin
   Result := False;
   lNomeArquivo := Format('%s.%s_%s.%s.json', [ABancoOrigem, ATabelaOrigem, ABancoDestino, ATabelaDestino]);
   lDiretorioArquivo := IncludeTrailingPathDelimiter(DirConsultasPendentes)+ lNomeArquivo;
+  OCaminhoArquivo := lDiretorioArquivo;
   if FileExists(lDiretorioArquivo) then
-    Exit(False);
+    DeleteFile(lDiretorioArquivo);
   lQuery := TFDQuery.Create(nil);
   try
     lQuery.Connection := ConexaoOrigem;

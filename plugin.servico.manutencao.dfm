@@ -2,7 +2,7 @@ object fmServicos: TfmServicos
   Left = 0
   Top = 0
   Caption = 'Servi'#231'os'
-  ClientHeight = 510
+  ClientHeight = 522
   ClientWidth = 1007
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -19,20 +19,23 @@ object fmServicos: TfmServicos
     Left = 0
     Top = 0
     Width = 1007
-    Height = 510
+    Height = 522
     ActivePage = tsRetorno
     Align = alClient
     TabOrder = 0
+    ExplicitHeight = 510
     object tsRetorno: TTabSheet
       Caption = 'tsRetorno'
       TabVisible = False
+      ExplicitHeight = 500
       object pnlSideBar: TPanel
         Left = 0
         Top = 0
         Width = 153
-        Height = 500
+        Height = 512
         Align = alLeft
         TabOrder = 0
+        ExplicitHeight = 500
         object Label1: TLabel
           Left = 2
           Top = 52
@@ -128,19 +131,51 @@ object fmServicos: TfmServicos
           TabOrder = 7
           Width = 145
         end
+        object chkAutoRefresh: TCheckBox
+          Left = 3
+          Top = 439
+          Width = 145
+          Height = 17
+          Caption = 'Auto refresh (Status)'
+          TabOrder = 8
+          OnClick = chkAutoRefreshClick
+        end
+        object chkAutoRefreshLog: TCheckBox
+          Left = 3
+          Top = 462
+          Width = 145
+          Height = 17
+          Caption = 'Auto refresh (Log)'
+          TabOrder = 9
+          OnClick = chkAutoRefreshLogClick
+        end
+        object chkLimpaLog: TCheckBox
+          Left = 3
+          Top = 485
+          Width = 145
+          Height = 17
+          Hint = 'Limpa os logs anteriores ao consultar um novo'
+          Caption = 'Limpar Log'
+          Checked = True
+          ParentShowHint = False
+          ShowHint = True
+          State = cbChecked
+          TabOrder = 10
+        end
       end
       object pnlBackground: TPanel
         Left = 153
         Top = 0
         Width = 846
-        Height = 500
+        Height = 512
         Align = alClient
         TabOrder = 1
+        ExplicitHeight = 500
         object mmResposta: TMemo
           Left = 1
           Top = 1
           Width = 844
-          Height = 498
+          Height = 510
           Align = alClient
           Color = clInfoBk
           Font.Charset = DEFAULT_CHARSET
@@ -152,8 +187,23 @@ object fmServicos: TfmServicos
             'Log de retornos das requisi'#231#245'es do servi'#231'o')
           ParentFont = False
           TabOrder = 0
+          ExplicitHeight = 498
         end
       end
     end
+  end
+  object tmAutoRefresh: TTimer
+    Enabled = False
+    Interval = 2000
+    OnTimer = tmAutoRefreshTimer
+    Left = 272
+    Top = 160
+  end
+  object tmAutoRefreshLog: TTimer
+    Enabled = False
+    Interval = 2000
+    OnTimer = tmAutoRefreshLogTimer
+    Left = 272
+    Top = 224
   end
 end

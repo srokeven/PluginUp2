@@ -3,7 +3,7 @@ object fmrMainPlugin: TfmrMainPlugin
   Top = 0
   Caption = 'Plugin Up2'
   ClientHeight = 116
-  ClientWidth = 395
+  ClientWidth = 393
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
