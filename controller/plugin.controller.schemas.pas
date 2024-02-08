@@ -117,7 +117,8 @@ end;
 
 procedure TPluginSchemas.FilaAtualizacaoDatas(ATabelaAtualizada: TPluginTabelaParaAtualizar);
 begin
-  FFilaAtualizacaoData.Add(ATabelaAtualizada);
+  FFilaAtualizacaoData.Add(TPluginTabelaParaAtualizar.Novo(ATabelaAtualizada.SqlDataAtualizar,
+    ATabelaAtualizada.TabelaOrigem, ATabelaAtualizada.TabelaDestino, ATabelaAtualizada.CaminhoArquivo));
 end;
 
 function TPluginSchemas.GetLink(AIndex: integer): TPluginLink;
@@ -154,6 +155,8 @@ var
   I: Integer;
 begin
   Result := False;
+  FListaTabelasConsultadas.Clear;
+  FFilaAtualizacaoData.Clear;
   //Conectar banco origem
   lConexaoOrigem := TdmConexao.Create(nil);
   try
@@ -171,7 +174,8 @@ begin
                                            LerJson(FBaseDestino.Salvar, 'nome'),
                                            lCaminhoArquivo) then
         begin
-          FListaTabelasConsultadas.Add(TPluginTabelaParaAtualizar.Novo(lSqlAtualizaDatas, FLinks[I].TabelaOrigem, FLinks[I].TabelaDestino, lCaminhoArquivo))
+          if not (lSqlAtualizaDatas.IsEmpty) then
+            FListaTabelasConsultadas.Add(TPluginTabelaParaAtualizar.Novo(lSqlAtualizaDatas, FLinks[I].TabelaOrigem, FLinks[I].TabelaDestino, lCaminhoArquivo))
         end;
       end;
       Result := True;
