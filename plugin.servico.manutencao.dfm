@@ -23,11 +23,9 @@ object fmServicos: TfmServicos
     ActivePage = tsRetorno
     Align = alClient
     TabOrder = 0
-    ExplicitHeight = 510
     object tsRetorno: TTabSheet
       Caption = 'tsRetorno'
       TabVisible = False
-      ExplicitHeight = 500
       object pnlSideBar: TPanel
         Left = 0
         Top = 0
@@ -35,7 +33,6 @@ object fmServicos: TfmServicos
         Height = 512
         Align = alLeft
         TabOrder = 0
-        ExplicitHeight = 500
         object Label1: TLabel
           Left = 2
           Top = 52
@@ -170,7 +167,6 @@ object fmServicos: TfmServicos
         Height = 512
         Align = alClient
         TabOrder = 1
-        ExplicitHeight = 500
         object mmResposta: TMemo
           Left = 1
           Top = 1
@@ -187,7 +183,6 @@ object fmServicos: TfmServicos
             'Log de retornos das requisi'#231#245'es do servi'#231'o')
           ParentFont = False
           TabOrder = 0
-          ExplicitHeight = 498
         end
       end
     end

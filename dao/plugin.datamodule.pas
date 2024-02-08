@@ -341,6 +341,8 @@ procedure TdmConexao.Execute(ASQL: string; AConexao: TFDConnection);
 var
   lQuery: TFDQuery;
 begin
+  if ASQL.IsEmpty then
+    Exit;
   lQuery := TFDQuery.Create(nil);
   try
     lQuery.Connection := AConexao;
@@ -388,6 +390,8 @@ var
   lQuery: TFDQuery;
   LJSONArray: TJSONArray;
 begin
+  if ASQL.IsEmpty then
+    Exit(EmptyStr);
   lQuery := TFDQuery.Create(nil);
   try
     lQuery.Connection := Conexao;
