@@ -224,11 +224,13 @@ end;
 procedure TdmMonitoramento.Processar;
 var
   I: Integer;
+  lDataConsultas: string;
 begin
   SetStatus(psExecutando);
+  lDataConsultas := DateToSQLDateTime(Now);
   for I := 0 to FListaSchemas.Count - 1 do
   begin
-    if FListaSchemas[I].Consultar then
+    if FListaSchemas[I].Consultar(lDataConsultas) then
       FListaSchemas[I].Executar;
   end;
 end;

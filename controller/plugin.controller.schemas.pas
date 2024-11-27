@@ -40,7 +40,7 @@ type
     function GetIndexLinkByTables(ATabelaOrigem, ATabelaDestino: string): integer;
     function GetLink(AIndex: integer): TPluginLink;
 
-    function Consultar: boolean;
+    function Consultar(ADataConsultas: string): boolean;
     function Executar: boolean;
     function Atualizar: boolean;
     function Mover: boolean;
@@ -148,7 +148,7 @@ begin
   Result := Assigned(GetLinkByTables(ATabelaOrigem, ATabelaDestino));
 end;
 
-function TPluginSchemas.Consultar: boolean;
+function TPluginSchemas.Consultar(ADataConsultas: string): boolean;
 var
   lConexaoOrigem: TdmConexao;
   lSqlAtualizaDatas, lCaminhoArquivo: string;
@@ -166,7 +166,7 @@ begin
       //Montar SQLs
       for I := 0 to FLinks.Count - 1 do
       begin
-        lSqlAtualizaDatas := FLinks[I].AtualizarDataConsulta;;
+        lSqlAtualizaDatas := FLinks[I].AtualizarDataConsulta(ADataConsultas);
         if lConexaoOrigem.ConsultarESalvar(FLinks[I].GetSelect,
                                            FLinks[I].TabelaOrigem,
                                            LerJson(FBaseOrigem.Salvar, 'nome'),

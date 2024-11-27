@@ -74,7 +74,7 @@ type
     function GetSelect: string;
     function GetInsert: string;
     procedure MontaWhereSelect;
-    function AtualizarDataConsulta: string;
+    function AtualizarDataConsulta(ADataConsultas: string): string;
     class function Novo: TPluginLink; overload;
     class function Novo(AJson: string): TPluginLink; overload;
     function GetJoins: TObjectList<TPluginLinkJoin>;
@@ -183,11 +183,11 @@ begin
   FJoins.Add(TPluginLinkJoin.Novo(ATabelaJoin, ATipoJoin, ACondicaoJoin));
 end;
 
-function TPluginLink.AtualizarDataConsulta: string;
+function TPluginLink.AtualizarDataConsulta(ADataConsultas: string): string;
 begin
   Result := '';
   if not (FWhereSelect.IsEmpty) then
-    Result := 'update SINCRONIZACAO_PLUGIN set '+FTabelaOrigem+' = '+DateToSQLDateTime(Now);
+    Result := 'update SINCRONIZACAO_PLUGIN set '+FTabelaOrigem+' = '+ADataConsultas;
 end;
 
 constructor TPluginLink.Create;
