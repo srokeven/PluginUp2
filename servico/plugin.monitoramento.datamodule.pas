@@ -24,13 +24,23 @@ type
     FSchema: TPluginSchemas;
     FStatus: TPluginStatus;
     FExecucaoManual: boolean;
+    FPortaAPI, FIntervaloCiclos: integer;
     procedure CarregarArquivosSchemas;
     function TestarConexoes: boolean;
     function ExecutarSchema: boolean;
     procedure CriarTask;
     procedure Processar;
     procedure PosProcessamento;
+    procedure IniciaCiclos;
+    procedure PararCiclos;
+    procedure PausarCiclos;
   public
+    procedure Start;
+    procedure Stop;
+    procedure CarregarConfiguracao;
+    procedure SalvarConfiguracao;
+    procedure RegistrarEndpoints;
+
     procedure IniciarEx;
     procedure Iniciar;
     procedure Retornar;
@@ -46,6 +56,8 @@ type
 implementation
 
 {%CLASSGROUP 'Vcl.Controls.TControl'}
+
+uses Horse, Horse.Jhonson;
 
 {$R *.dfm}
 
@@ -63,6 +75,12 @@ begin
     lJsonAtual := LerJsonFromFile(lArquivoAtual);
     FListaSchemas.Add(TPluginSchemas.Novo(lArquivoAtual));
   end;
+end;
+
+procedure TdmMonitoramento.CarregarConfiguracao;
+begin
+  FPortaAPI := StrToIntDef(LerIni('GERAL', 'PORTA_GERENCIAL', '49255', IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)))+'configuracao.ini'), 49255);
+  FIntervaloCiclos := StrToIntDef(LerIni('GERAL', 'INTERVALO', '15000', IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)))+'configuracao.ini'), 15000);
 end;
 
 procedure TdmMonitoramento.CriarTask;
@@ -107,6 +125,99 @@ begin
   else
 
   FreeAndNil(FSchema);
+end;
+
+procedure TdmMonitoramento.RegistrarEndpoints;
+begin
+  THorse.Use(Jhonson());
+  THorse.Post('/logs/:skip/:quantidade',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    var
+      lSkip, lQuantidade, lLogs: string;
+    begin
+      if not (FStatus = psParado) then
+      begin
+        lSkip := Req.Params['skip'].Replace('*', '');
+        lQuantidade := Req.Params['quantidade'].Replace('*', '');
+        lLogs := GetListLogs(StrToIntDef(lQuantidade, 10), StrToIntDef(lSkip, 0));
+        Res.Send(lLogs).Status(THTTPStatus.OK);
+      end else
+      begin
+        Res.Send('Serviço não iniciado').Status(THTTPStatus.OK);
+      end;
+    end);
+
+  THorse.Post('/log/:data',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    var
+      lData, lLogs, dia, mes, ano: string;
+    begin
+      if not (FStatus = psParado) then
+      begin
+        lData := Req.Params['data'].Replace('*', '');
+        dia := Copy(lData, 1, 2);
+        mes := Copy(lData, 3, 2);
+        ano := Copy(lData, 5, 4);
+
+        // Montar a string da data no formato "DD/MM/AAAA"
+        lData := Format('%s/%s/%s', [dia, mes, ano]);
+        lLogs := GetLog(StrToDateDef(lData, Date));
+        Res.Send(lLogs).Status(THTTPStatus.OK);
+      end else
+      begin
+        Res.Send('Serviço não iniciado').Status(THTTPStatus.OK);
+      end;
+    end);
+
+  THorse.Get('/parar',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      if not (FStatus = psParado) then
+      begin
+        PausarCiclos;
+        Res.Send('Serviço pausado').Status(THTTPStatus.OK);
+      end else
+      begin
+        Res.Send('Serviço não iniciado').Status(THTTPStatus.OK);
+      end;
+    end);
+
+  THorse.Get('/iniciar',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      if not (FStatus = psParado) then
+      begin
+        case GetStatusValue of
+          0, 1: begin
+            Retornar;
+            Res.Send('Retornando serviço').Status(THTTPStatus.OK);
+          end;
+          2: begin
+            Res.Send('Serviço já iniciado').Status(THTTPStatus.Accepted);
+          end;
+        end;
+      end else
+      begin
+        IniciaCiclos;
+        Res.Send('Iniciando serviço').Status(THTTPStatus.OK);
+      end;
+    end);
+
+  THorse.Get('/status',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      if not (FStatus = psParado) then
+      begin
+        Res.Send(GetStatus).Status(THTTPStatus.OK);
+      end else
+        Res.Send('Serviço não iniciado').Status(THTTPStatus.OK);
+    end);
+
+  THorse.Get('/online',
+    procedure(Req: THorseRequest; Res: THorseResponse)
+    begin
+      Res.Send('ok').Status(THTTPStatus.OK);
+    end);
 end;
 
 procedure TdmMonitoramento.Retornar;
@@ -180,6 +291,12 @@ begin
   end;
 end;
 
+procedure TdmMonitoramento.IniciaCiclos;
+begin
+  SetInterlavoCiclos(FIntervaloCiclos);
+  Iniciar;
+end;
+
 procedure TdmMonitoramento.Iniciar;
 begin
   SetStatus(psIniciado);
@@ -215,10 +332,20 @@ begin
   SetStatus(psParado);
 end;
 
+procedure TdmMonitoramento.PararCiclos;
+begin
+  Parar;
+end;
+
 procedure TdmMonitoramento.Pausar;
 begin
   FExecucaoManual := True;
   tmCiclos.Enabled := False;
+end;
+
+procedure TdmMonitoramento.PausarCiclos;
+begin
+  Pausar;
 end;
 
 procedure TdmMonitoramento.Processar;
@@ -250,6 +377,12 @@ begin
     tmCiclos.Enabled := True;
 end;
 
+procedure TdmMonitoramento.SalvarConfiguracao;
+begin
+  GravarIni('GERAL', 'PORTA_GERENCIAL', FPortaAPI.ToString, IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)))+'configuracao.ini');
+  GravarIni('GERAL', 'INTERVALO', FIntervaloCiclos.ToString, IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)))+'configuracao.ini');
+end;
+
 procedure TdmMonitoramento.SetInterlavoCiclos(AMilliseconds: integer);
 begin
   tmCiclos.Enabled := False;
@@ -259,6 +392,23 @@ end;
 procedure TdmMonitoramento.SetStatus(AStatus: TPluginStatus);
 begin
   FStatus := AStatus;
+end;
+
+procedure TdmMonitoramento.Start;
+begin
+  THorse.Listen(FPortaAPI);
+  GravaLog('Serviço iniciado, ouvindo na porta: '+FPortaAPI.ToString, 'log');
+
+  IniciaCiclos;
+end;
+
+procedure TdmMonitoramento.Stop;
+begin
+  if THorse.IsRunning then
+    THorse.StopListen;
+  GravaLog('Serviço parado', 'log');
+
+  PararCiclos;
 end;
 
 function TdmMonitoramento.TestarConexoes: boolean;

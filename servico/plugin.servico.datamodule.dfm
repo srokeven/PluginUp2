@@ -1,4 +1,5 @@
 object dmService: TdmService
+  OldCreateOrder = True
   OnCreate = ServiceCreate
   OnDestroy = ServiceDestroy
   DisplayName = 'dmService'

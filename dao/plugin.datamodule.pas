@@ -303,7 +303,7 @@ begin
       except
         on E: exception do
         begin
-           GravaLog('Erro ao executar inserção de dados no banco de destino: '+e.Message, 'log');
+           GravaLog('Erro ao executar inserção de dados no banco de destino: '+e.Message+sLineBreak+'Arquivo: '+lNomeArquivo, 'log');
         end;
       end;
     finally
