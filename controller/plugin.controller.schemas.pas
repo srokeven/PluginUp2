@@ -4,7 +4,7 @@ interface
 
 uses System.JSON, System.SysUtils, System.Classes, System.Generics.Collections,
   plugin.controller.links, plugin.controller.databases, uUtils, System.StrUtils,
-  plugin.datamodule, System.IOUtils, Vcl.FileCtrl, FileSearchUnit;
+  plugin.datamodule, System.IOUtils, {$IF DEFINED(MSWINDOWS)}Vcl.FileCtrl,{$ENDIF} FileSearchUnit;
 
 type
   TPluginTabelaParaAtualizar = class
@@ -30,7 +30,7 @@ type
     procedure AddLink(ALink: TPluginLink);
     procedure DeleteLink(ALink: TPluginLink);
     function Salvar: string;
-    function SalvarArquivo: boolean;
+    function SalvarArquivo(APasta: string): boolean;
     procedure LoadFromFile(AFile: string);
     function BaseOrigem: TPluginDatabases;
     function BaseDestino: TPluginDatabases;
@@ -379,7 +379,7 @@ begin
   end;
 end;
 
-function TPluginSchemas.SalvarArquivo: boolean;
+function TPluginSchemas.SalvarArquivo(APasta: string): boolean;
 var
   lNomeArquivo, lDiretorio: string;
 begin
@@ -387,7 +387,7 @@ begin
   if PodeSalvar then
   begin
     lNomeArquivo := LerJson(BaseOrigem.Salvar, 'nome')+'_'+LerJson(BaseDestino.Salvar, 'nome');
-    lDiretorio := IncludeTrailingPathDelimiter(DirSchemas)+lNomeArquivo+'.json';
+    lDiretorio := IncludeTrailingPathDelimiter(APasta)+lNomeArquivo+'.json';
     if FileExists(lDiretorio) then
       if not (ShowQuestion('Deseja substituir o registro "'+lNomeArquivo+'" existente?')) then
         Exit(False);

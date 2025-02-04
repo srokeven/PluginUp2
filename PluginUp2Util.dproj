@@ -5,7 +5,7 @@
         <FrameworkType>VCL</FrameworkType>
         <MainSource>PluginUp2Util.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -156,8 +156,12 @@
             <Form>fmMontaWhere</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="plugin.clonar.pas">
-            <Form>fmClonarBancoDados</Form>
+        <DCCReference Include="plugin.migrar.pas">
+            <Form>fmMigrarBancoDados</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="plugin.schemas.pas">
+            <Form>fmSchemas</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">
@@ -195,6 +199,12 @@
                 </DeployFile>
                 <DeployFile LocalName="Win32\Debug\PluginUp2Util.exe" Configuration="Debug" Class="ProjectOutput"/>
                 <DeployFile LocalName="Win32\Release\PluginUp2Util.exe" Configuration="Release" Class="ProjectOutput"/>
+                <DeployFile LocalName="bin\PluginUp2Util.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>PluginUp2Util.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="iOSSimulator">
                         <Operation>1</Operation>

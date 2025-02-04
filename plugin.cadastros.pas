@@ -268,6 +268,14 @@ type
     btnRemoverLinkCampo: TcxButton;
     btnCancelaCamposLink: TcxButton;
     btnVoltarTabela: TButton;
+    pcSchemas: TPageControl;
+    tsSchemaSincronia: TTabSheet;
+    tsSchemaMigracao: TTabSheet;
+    grListaMigracao: TDBGrid;
+    dsMigracao: TDataSource;
+    fmtMigracao: TFDMemTable;
+    fmtMigracaoDESCRICAO: TStringField;
+    fmtMigracaoDIR_ARQUIVO: TStringField;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnCadBancoDadosClick(Sender: TObject);
@@ -331,6 +339,7 @@ type
     procedure btnRemoveLinkClick(Sender: TObject);
     procedure btnRemoverLinkCampoClick(Sender: TObject);
     procedure btnCancelaCamposLinkClick(Sender: TObject);
+    procedure fmtMigracaoAfterEdit(DataSet: TDataSet);
   private
     FSchema: TPluginSchemas;
     FLink: TPluginLink;
@@ -341,6 +350,7 @@ type
     procedure CarregaBancosParaSelecao(ATipo: integer);
     procedure CarregarTabelas;
     procedure CarregarSchemas;
+    procedure CarregarMigracao;
     procedure AdicionarTabelaLista(ATabela: string);
     function TextoMemoBancos(var AMemo: TMemo; AJson: string): string;
     function TextoMemoTabelas(AJson: string): string;
@@ -448,10 +458,20 @@ end;
 
 procedure TfmCadastros.btnAlterarSchemaClick(Sender: TObject);
 begin
-  TextoMemoBancos(mmBancoOrigem,  LerJsonFromJson(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString), 'bancoorigem'));
-  TextoMemoBancos(mmBancoDestino, LerJsonFromJson(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString), 'bancodestino'));
-  TextoMemoTabelas(LerJsonArray(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString), 'links'));
-  fmtSchemas.Edit;
+  if pcSchemas.ActivePage = tsSchemaSincronia then
+  begin
+    TextoMemoBancos(mmBancoOrigem,  LerJsonFromJson(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString), 'bancoorigem'));
+    TextoMemoBancos(mmBancoDestino, LerJsonFromJson(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString), 'bancodestino'));
+    TextoMemoTabelas(LerJsonArray(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString), 'links'));
+    fmtSchemas.Edit;
+  end
+  else
+  begin
+    TextoMemoBancos(mmBancoOrigem,  LerJsonFromJson(LerJsonFromFile(fmtMigracaoDIR_ARQUIVO.AsString), 'bancoorigem'));
+    TextoMemoBancos(mmBancoDestino, LerJsonFromJson(LerJsonFromFile(fmtMigracaoDIR_ARQUIVO.AsString), 'bancodestino'));
+    TextoMemoTabelas(LerJsonArray(LerJsonFromFile(fmtMigracaoDIR_ARQUIVO.AsString), 'links'));
+    fmtMigracao.Edit;
+  end;
 end;
 
 procedure TfmCadastros.btnAlterarWhereClick(Sender: TObject);
@@ -500,8 +520,16 @@ procedure TfmCadastros.btnCancelaSchemaClick(Sender: TObject);
 begin
   if ShowQuestion('Deseja cancelar?') then
   begin
-    fmtSchemas.Cancel;
-    CarregarSchemas;
+    if pcSchemas.ActivePage = tsSchemaSincronia then
+    begin
+      fmtSchemas.Cancel;
+      CarregarSchemas;
+    end
+    else
+    begin
+      fmtMigracao.Cancel;
+      CarregarMigracao;
+    end;
   end;
 end;
 
@@ -512,14 +540,28 @@ end;
 
 procedure TfmCadastros.btnDeletaSchemaClick(Sender: TObject);
 begin
-  if fmtSchemas.IsEmpty then
-    raise Exception.Create('Nenhum registro encontrado');
-  if ShowQuestion('Deseja excluir o registro de esquema selecionado?') then
-    if FileExists(fmtSchemasDIR_ARQUIVO.AsString) then
-    begin
-      DeleteFile(fmtSchemasDIR_ARQUIVO.AsString);
-      fmtSchemas.Delete;
-    end;
+  if pcSchemas.ActivePage = tsSchemaSincronia then
+  begin
+    if fmtSchemas.IsEmpty then
+      raise Exception.Create('Nenhum registro encontrado');
+    if ShowQuestion('Deseja excluir o registro de esquema selecionado?') then
+      if FileExists(fmtSchemasDIR_ARQUIVO.AsString) then
+      begin
+        DeleteFile(fmtSchemasDIR_ARQUIVO.AsString);
+        fmtSchemas.Delete;
+      end;
+  end
+  else
+  begin
+    if fmtMigracao.IsEmpty then
+      raise Exception.Create('Nenhum registro encontrado');
+    if ShowQuestion('Deseja excluir o registro de esquema selecionado?') then
+      if FileExists(fmtMigracaoDIR_ARQUIVO.AsString) then
+      begin
+        DeleteFile(fmtMigracaoDIR_ARQUIVO.AsString);
+        fmtMigracao.Delete;
+      end;
+  end;
 end;
 
 procedure TfmCadastros.btnEditarDBClick(Sender: TObject);
@@ -622,7 +664,10 @@ begin
   TextoMemoBancos(mmBancoOrigem, '');
   TextoMemoBancos(mmBancoDestino, '');
   TextoMemoTabelas('');
-  fmtSchemas.Insert;
+  if pcSchemas.ActivePage = tsSchemaSincronia then
+    fmtSchemas.Insert
+  else
+    fmtMigracao.Insert;
 end;
 
 procedure TfmCadastros.btnProcurarBancoClick(Sender: TObject);
@@ -649,6 +694,7 @@ procedure TfmCadastros.btnRegTabelasClick(Sender: TObject);
 begin
   pcPrincipal.ActivePage := tsCadSchemas;
   CarregarSchemas;
+  CarregarMigracao;
 end;
 
 procedure TfmCadastros.btnRemoveLinkClick(Sender: TObject);
@@ -785,8 +831,13 @@ end;
 
 procedure TfmCadastros.btnSalvarSchemaClick(Sender: TObject);
 begin
-  if FSchema.SalvarArquivo then
-    fmtSchemas.Post;
+  if FSchema.SalvarArquivo(IfThen(pcSchemas.ActivePage = tsSchemaSincronia, DirSchemas, DirSchemasMigracao)) then
+  begin
+    if pcSchemas.ActivePage = tsSchemaSincronia then
+      fmtSchemas.Post
+    else
+      fmtMigracao.Post;
+  end;
 end;
 
 procedure TfmCadastros.btnSalvarTabelasClick(Sender: TObject);
@@ -1220,6 +1271,29 @@ begin
   fmtCamposOrigem.First;
 end;
 
+procedure TfmCadastros.CarregarMigracao;
+var
+  I: integer;
+  lArquivoAtual, lJsonAtual: string;
+begin
+  fmtMigracao.Close;
+  fmtMigracao.Open;
+  flbListaArquivos.Directory(DirSchemasMigracao);
+  flbListaArquivos.Extension('.json');
+  flbListaArquivos.Execute;
+  for I := 0 to flbListaArquivos.GetFileList.Count -1 do
+  begin
+    lArquivoAtual := flbListaArquivos.GetFileList[I];
+    lJsonAtual := LerJsonFromFile(lArquivoAtual);
+    fmtMigracao.Append;
+    fmtMigracaoDESCRICAO.AsString := LerJson(LerJsonFromJson(lJsonAtual, 'bancoorigem'), 'nome') +' --> '+LerJson(LerJsonFromJson(lJsonAtual, 'bancodestino'), 'nome');
+    fmtMigracaoDIR_ARQUIVO.AsString := lArquivoAtual;
+    fmtMigracao.Post;
+  end;
+  fmtMigracao.First;
+  tsSchemaMigracao.TabVisible := not (fmtMigracao.IsEmpty);
+end;
+
 procedure TfmCadastros.CarregarCamposTabelaDestino(ANovo: boolean);
 var
   lJsonTabela, lJsonCampos: string;
@@ -1279,6 +1353,7 @@ begin
     fmtSchemas.Post;
   end;
   fmtSchemas.First;
+  tsSchemaSincronia.TabVisible := not (fmtSchemas.IsEmpty);
 end;
 
 procedure TfmCadastros.CarregarTabelas;
@@ -1544,9 +1619,9 @@ end;
 procedure TfmCadastros.dsBancosDeDadosDataChange(Sender: TObject;
   Field: TField);
 begin
-  if fmtBancosDeDadosSISTEMA.AsString = 'MV' then
+  if fmtBancosDeDadosSISTEMA.AsString = MV then
     btnZerarDatas.DropDownMenu := popZerarTabelas;
-  if fmtBancosDeDadosSISTEMA.AsString = 'PDV' then
+  if fmtBancosDeDadosSISTEMA.AsString = PDV then
     btnZerarDatas.DropDownMenu := popZerarTabelasPDV;
 end;
 
@@ -1564,11 +1639,12 @@ end;
 
 procedure TfmCadastros.dsSchemasStateChange(Sender: TObject);
 begin
-  pnlEditsSchemas.Visible := dsSchemas.State in [dsInsert, dsEdit];
-  btnDeletaSchema.Enabled := (dsSchemas.State = dsBrowse) and (not dsSchemas.DataSet.IsEmpty);
-  btnAlterarSchema.Enabled := (dsSchemas.State = dsBrowse) and (not dsSchemas.DataSet.IsEmpty);
-  btnNovoSchema.Enabled := dsSchemas.State = dsBrowse;
-  grListaSchemas.Enabled := dsSchemas.State = dsBrowse;
+  pnlEditsSchemas.Visible := TDataSource(Sender).State in [dsInsert, dsEdit];
+  btnDeletaSchema.Enabled := (TDataSource(Sender).State = dsBrowse) and (not TDataSource(Sender).DataSet.IsEmpty);
+  btnAlterarSchema.Enabled := (TDataSource(Sender).State = dsBrowse) and (not TDataSource(Sender).DataSet.IsEmpty);
+  btnNovoSchema.Enabled := TDataSource(Sender).State = dsBrowse;
+  grListaSchemas.Enabled := TDataSource(Sender).State = dsBrowse;
+  grListaMigracao.Enabled := TDataSource(Sender).State = dsBrowse;
 end;
 
 procedure TfmCadastros.fmtCamposDestinoTAMANHOGetText(Sender: TField;
@@ -1611,6 +1687,16 @@ begin
       4: Text := 'Data/Hora';
       5: Text := 'Texto grande';
     end;
+end;
+
+procedure TfmCadastros.fmtMigracaoAfterEdit(DataSet: TDataSet);
+begin
+  if Assigned(FSchema) then
+  begin
+    FreeAndNil(FSchema);
+  end;
+  FSchema := TPluginSchemas.Create;
+  FSchema.LoadFromFile(fmtMigracaoDIR_ARQUIVO.AsString);
 end;
 
 procedure TfmCadastros.fmtSchemasAfterCancel(DataSet: TDataSet);
@@ -1665,6 +1751,7 @@ end;
 procedure TfmCadastros.FormCreate(Sender: TObject);
 begin
   pcPrincipal.ActivePage := tsBoasVindas;
+  pcSchemas.ActivePage := tsSchemaSincronia;
   grTabelasOrigem.OnDrawColumnCell := HandleDrawColumnCell;
   grTabelasDestino.OnDrawColumnCell := HandleDrawColumnCell;
   grTabelasDestino.OnCellClick := HandleCellClickDestino;
@@ -1814,8 +1901,16 @@ begin
     if LerJson(AJson, 'tipo') = '0' then
       FNomeOrigem := LerJson(AJson, 'nome')
     else FNomeDestino := LerJson(AJson, 'nome');
-    if fmtSchemas.State in [dsInsert, dsEdit] then
-      fmtSchemasDESCRICAO.AsString := FNomeOrigem + ' --> ' + FNomeDestino;
+    if pcSchemas.ActivePage = tsSchemaSincronia then
+    begin
+      if fmtSchemas.State in [dsInsert, dsEdit] then
+        fmtSchemasDESCRICAO.AsString := FNomeOrigem + ' --> ' + FNomeDestino;
+    end
+    else
+    begin
+      if fmtMigracao.State in [dsInsert, dsEdit] then
+        fmtMigracaoDESCRICAO.AsString := FNomeOrigem + ' --> ' + FNomeDestino;
+    end;
   end else
   begin
     AMemo.Lines.Add('Selecione o arquivo ');

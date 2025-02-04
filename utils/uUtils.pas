@@ -4,7 +4,7 @@ interface
 
 uses
   Inifiles, System.SysUtils, System.JSON, System.Classes, System.DateUtils,
-  Vcl.Forms, Winapi.Windows, System.StrUtils, System.Math;
+  {$IF DEFINED(MSWINDOWS)} Vcl.Forms, Winapi.Windows,{$ENDIF} System.StrUtils, System.Math;
 
   //Manipulação de arquivos
   procedure GravarIni(ASecao, AIdent, AValor, AIniFile: string);
@@ -17,12 +17,14 @@ uses
   function DirTabelas: string;
   function DirSchemas: string;
   function DirSchemasMigracao: string;
+  function DirSchemasMigracaoTabelasOrigem(ASistema: string): string;
+  function DirSchemasMigracaoTabelasConfiguracao: string;
   function DirConsultas: string;
   function DirConsultasPendentes: string;
   function DirConsultasHistorico: string;
 
   //Manipulação de JSON
-  function LerJson(aJson, aIdent: string): string;  //Retorna um valor de um parametro de json
+  function LerJson(aJson, aIdent: string; ADefault: string = ''): string;  //Retorna um valor de um parametro de json
   function LerJsonFromJson(aJson, aIdent: string): string;  //Retorna um objecto json de um parametro de json
   function LerJsonArray(aJson, aNameArray: string): string; //Retorna um string de um array de json de um objeto
   function LerJsonFromArrayJson(aJson: string; aIndex: integer): string;   //Retorna um json dentro de um array de json
@@ -35,8 +37,7 @@ uses
 
   //Tradução de constantes
   function LogTypeToString(AType: integer): string;
-  function DateToSQLDateTime(aDateTime: TDateTime; aTipo: integer = 0;
-  aPosicao: integer = 0): string;
+  function DateToSQLDateTime(aDateTime: TDateTime; aTipo: integer = 0; aPosicao: integer = 0): string;
 
   //Calculos matematicos
   function CalculaOValorEquivalenteAPorcentagemSobreValor(aPercent, aValue: double): double;
@@ -64,6 +65,8 @@ const
   EXTRAIR_PRE_TRECHO = 0;
   EXTRAIR_TRECHO = 1;
   EXTRAIR_POS_TRECHO = 2;
+  PDV = 'PDV';
+  MV = 'MV';
 
 
 implementation
@@ -200,6 +203,23 @@ begin
   Result := IncludeTrailingPathDelimiter(DirLocal)+'schemas_migracao';
 end;
 
+function DirSchemasMigracaoTabelasOrigem(ASistema: string): string;
+begin
+  Result := IncludeTrailingPathDelimiter(DirSchemasMigracao)+'databases';
+  Result := IncludeTrailingPathDelimiter(Result)+'tables';
+  Result := IncludeTrailingPathDelimiter(Result)+ASistema;
+  if not (DirectoryExists(Result)) then
+    ForceDirectories(Result);
+end;
+
+function DirSchemasMigracaoTabelasConfiguracao: string;
+begin
+  Result := IncludeTrailingPathDelimiter(DirSchemasMigracao)+'databases';
+  Result := IncludeTrailingPathDelimiter(Result)+'config';
+  if not (DirectoryExists(Result)) then
+    ForceDirectories(Result);
+end;
+
 function DirConsultas: string;
 begin
   Result := IncludeTrailingPathDelimiter(DirLocal)+'consultas';
@@ -217,11 +237,11 @@ begin
     ForceDirectories(Result);
 end;
 
-function LerJson(aJson, aIdent: string): string;
+function LerJson(aJson, aIdent: string; ADefault: string = ''): string;
 var
   Obj: TJSONObject;
 begin //Retorna um valor de um json simples
-  Result := '';
+  Result := ADefault;
   if (aJson.IsEmpty) or (aJson = '[]') or (aJson = '{}') then
     Exit;
   if not (aIdent.IsEmpty) then
@@ -229,9 +249,9 @@ begin //Retorna um valor de um json simples
     Obj := TJSONObject.ParseJSONValue(aJson) as TJSONObject;
     try
       try
-        Result := Obj.GetValue<string>(aIdent.ToLower, '');
+        Result := Obj.GetValue<string>(aIdent.ToLower, ADefault);
         if Result = '' then
-          Result := Obj.GetValue<string>(aIdent.ToUpper, '');
+          Result := Obj.GetValue<string>(aIdent.ToUpper, ADefault);
       except
       end;
     finally
@@ -326,6 +346,7 @@ var
   JSONText: string;
   vObjectJson: TJSONObject;
   FileStream: TFileStream;
+  lLista: TStringList;
 begin
   if not FileExists(FileName) then
     Exit('');
@@ -340,8 +361,24 @@ begin
   if not (JSONText.IsEmpty) then
   begin
     vObjectJson := TJSONObject.ParseJSONValue(JSONText) as TJSONObject;
-    Result := vObjectJson.ToJSON;
-    vObjectJson.Free;
+    try
+      if not Assigned(vObjectJson) then
+      begin
+        lLista := TStringList.Create;
+        try
+          lLista.LoadFromFile(FileName);
+          vObjectJson.Free;
+          vObjectJson := TJSONObject.ParseJSONValue(lLista.Text) as TJSONObject;
+          Result := vObjectJson.ToJSON;
+        finally
+          lLista.Free;
+        end;
+      end
+      else
+        Result := vObjectJson.ToJSON;
+    finally
+      vObjectJson.Free;
+    end;
   end;
 end;
 
@@ -350,6 +387,7 @@ var
   JSONText: string;
   FileStream: TFileStream;
   vJsonArray: TJSONArray;
+  lLista: TStringList;
 begin
   if not FileExists(FileName) then
     Exit('[]');
@@ -363,7 +401,20 @@ begin
   end;
 
   vJsonArray := TJSONObject.ParseJSONValue(JSONText) as TJSONArray;
-  Result := vJsonArray.ToJSON;
+  if not Assigned(vJsonArray) then
+  begin
+    lLista := TStringList.Create;
+    try
+      lLista.LoadFromFile(FileName);
+      vJsonArray.Free;
+      vJsonArray := TJSONObject.ParseJSONValue(lLista.Text) as TJSONArray;
+      Result := vJsonArray.ToJSON;
+    finally
+      lLista.Free;
+    end;
+  end
+  else
+    Result := vJsonArray.ToJSON;
   vJsonArray.Free;
 end;
 
@@ -477,13 +528,17 @@ end;
 
 function ShowQuestion(const aMsg: string; aTitulo:String = 'Importante'; aPreSelect: integer = 0): boolean;
 begin
+  {$IF DEFINED(MSWINDOWS)}
   Result := (Application.MessageBox(PWideChar(aMsg), PWideChar(aTitulo),
     MB_ICONQUESTION + MB_YESNO + IfThen(aPreSelect = 0, MB_DEFBUTTON2, MB_DEFBUTTON1)) = IDYES);
+  {$ENDIF}
 end;
 
 procedure ShowWarning(const aMsg: string; aTitulo:String = 'Aviso');
 begin
+  {$IF DEFINED(MSWINDOWS)}
   Application.MessageBox(PWideChar(aMsg), PWideChar(aTitulo), MB_ICONWARNING + MB_OK);
+  {$ENDIF}
 end;
 
 function ExtrairTextoAPartirDePosicao(aTexto, aTrecho: string; aDirecao: integer): string;

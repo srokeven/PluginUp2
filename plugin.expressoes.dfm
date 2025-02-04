@@ -3,7 +3,7 @@ object fmMontarExperssao: TfmMontarExperssao
   Top = 0
   BorderIcons = []
   Caption = 'Montar Express'#227'o'
-  ClientHeight = 497
+  ClientHeight = 545
   ClientWidth = 886
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -20,16 +20,16 @@ object fmMontarExperssao: TfmMontarExperssao
     Left = 0
     Top = 0
     Width = 886
-    Height = 456
+    Height = 504
     Align = alClient
     TabOrder = 0
-    ExplicitHeight = 429
+    ExplicitHeight = 456
     DesignSize = (
       886
-      456)
+      504)
     object Label1: TLabel
       Left = 24
-      Top = 261
+      Top = 284
       Width = 48
       Height = 13
       Caption = 'Resultado'
@@ -69,6 +69,20 @@ object fmMontarExperssao: TfmMontarExperssao
       Height = 13
       Caption = 'Ent'#227'o o campo %s receber'#225' o valor...'
     end
+    object Label2: TLabel
+      Left = 450
+      Top = 235
+      Width = 90
+      Height = 13
+      Caption = 'Tabela estrangeira'
+    end
+    object Label3: TLabel
+      Left = 551
+      Top = 235
+      Width = 33
+      Height = 13
+      Caption = 'Campo'
+    end
     object rbOpcaoIif: TRadioButton
       Left = 24
       Top = 16
@@ -89,9 +103,9 @@ object fmMontarExperssao: TfmMontarExperssao
     end
     object mmResultado: TMemo
       Left = 24
-      Top = 280
+      Top = 303
       Width = 833
-      Height = 156
+      Height = 181
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 2
     end
@@ -168,7 +182,7 @@ object fmMontarExperssao: TfmMontarExperssao
     end
     object rbValorPadrao: TRadioButton
       Left = 450
-      Top = 208
+      Top = 162
       Width = 407
       Height = 17
       Caption = 'Informar valor padr'#227'o para o campo %s'
@@ -177,14 +191,14 @@ object fmMontarExperssao: TfmMontarExperssao
     end
     object edValorPadrao: TEdit
       Left = 450
-      Top = 234
+      Top = 185
       Width = 135
       Height = 21
       TabOrder = 13
     end
     object btnGerarValorPadrao: TButton
       Left = 591
-      Top = 230
+      Top = 184
       Width = 75
       Height = 25
       Caption = 'Gerar'
@@ -200,15 +214,47 @@ object fmMontarExperssao: TfmMontarExperssao
       TabOrder = 15
       OnClick = btnGerarSQLConversaoClick
     end
+    object rbSelectFromTable: TRadioButton
+      Left = 450
+      Top = 212
+      Width = 407
+      Height = 17
+      Caption = 'Selecionar campo de outra tabela (Migra'#231#227'o)'
+      TabOrder = 16
+      OnClick = rbOpcaoIifClick
+    end
+    object edTabelaEstrangeira: TEdit
+      Left = 450
+      Top = 258
+      Width = 90
+      Height = 21
+      TabOrder = 17
+    end
+    object edCampoEstrangeiro: TEdit
+      Left = 551
+      Top = 258
+      Width = 90
+      Height = 21
+      TabOrder = 18
+    end
+    object btnGerarSelectFromTable: TButton
+      Left = 647
+      Top = 256
+      Width = 75
+      Height = 25
+      Caption = 'Gerar'
+      TabOrder = 19
+      OnClick = btnGerarSelectFromTableClick
+    end
   end
   object Panel2: TPanel
     Left = 0
-    Top = 456
+    Top = 504
     Width = 886
     Height = 41
     Align = alBottom
     TabOrder = 1
-    ExplicitTop = 429
+    ExplicitTop = 456
     DesignSize = (
       886
       41)

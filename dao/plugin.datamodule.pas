@@ -6,11 +6,11 @@ uses
   System.SysUtils, System.Classes, FireDAC.Stan.Intf, FireDAC.Stan.Option,
   FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def,
   FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.FB,
-  FireDAC.Phys.FBDef, FireDAC.VCLUI.Wait, FireDAC.Comp.UI, FireDAC.Phys.IBBase,
+  FireDAC.Phys.FBDef, FireDAC.Comp.UI, FireDAC.Phys.IBBase,
   Data.DB, FireDAC.Comp.Client, uUtils, DataSet.Serialize, FireDAC.Stan.Param,
   FireDAC.DatS, FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Comp.DataSet,
   FireDAC.Comp.ScriptCommands, FireDAC.Stan.Util, FireDAC.Comp.Script,
-  System.JSON;
+  System.JSON, FireDAC.ConsoleUI.Wait;
 
 type
   TdmConexao = class(TDataModule)
@@ -23,7 +23,10 @@ type
     procedure DataModuleDestroy(Sender: TObject);
     procedure DataModuleCreate(Sender: TObject);
   private
+    FQuantidadeUltimaConsulta: integer;
+
   public
+    property QuantidadeUltimaConsulta: integer read FQuantidadeUltimaConsulta write FQuantidadeUltimaConsulta;
     procedure ConectarOrigem(AJson: string);
     procedure ConectarDestino(AJson: string);
     procedure Conectar(AJson: string);
@@ -144,6 +147,7 @@ var
   LJSONArray: TJSONArray;
 begin
   Result := False;
+  FQuantidadeUltimaConsulta := 0;
   lNomeArquivo := Format('%s.%s_%s.%s.json', [ABancoOrigem, ATabelaOrigem, ABancoDestino, ATabelaDestino]);
   lDiretorioArquivo := IncludeTrailingPathDelimiter(DirConsultasPendentes)+ lNomeArquivo;
   OCaminhoArquivo := lDiretorioArquivo;
@@ -157,6 +161,7 @@ begin
       lQuery.FetchAll;
       if not (lQuery.IsEmpty) then
       begin
+        FQuantidadeUltimaConsulta := lQuery.RecordCount;
         GravaLog(
          Format('Salvando %d registro da tabela %s do banco de dados %s para serem inseridos na tabela %s do banco de dados %s',
          [lQuery.RecordCount, ATabelaOrigem, ABancoOrigem, ATabelaDestino, ABancoDestino])
@@ -251,6 +256,9 @@ begin
         begin
           for O := 0 to lArrayEstruturaDestino.Count - 1 do
           begin
+            if not Assigned(lQuery.FindParam(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))) then
+              Continue;
+
             case StrToIntDef(lArrayEstruturaDestino.Items[O].GetValue<string>('tipodestino'),0) of
               0: begin
                 if not (lArray.Items[I].GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then

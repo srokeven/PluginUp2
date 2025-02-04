@@ -3,8 +3,8 @@ unit plugin.monitoramento.datamodule;
 interface
 
 uses
-  System.SysUtils, System.Classes, Vcl.ExtCtrls, System.Threading, Vcl.FileCtrl,
-  System.JSON, System.Generics.Collections,
+  System.SysUtils, System.Classes, Vcl.ExtCtrls,  Vcl.FileCtrl,
+  System.JSON, System.Generics.Collections, System.Threading,
   uUtils, plugin.controller.schemas, plugin.controller.databases,
   plugin.datamodule, FileSearchUnit, System.StrUtils;
 

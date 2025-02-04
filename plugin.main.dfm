@@ -3,7 +3,7 @@ object fmrMainPlugin: TfmrMainPlugin
   Top = 0
   Caption = 'Plugin Up2'
   ClientHeight = 116
-  ClientWidth = 393
+  ClientWidth = 591
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -351,7 +351,6 @@ object fmrMainPlugin: TfmrMainPlugin
       80F340CE177EBE78CE03B81044A3F864B9D0428F5F36C0CF3DE02CD025014C17
       1E5B6EFF17FDDF6DFE1B14C996790B6455A80000000049454E44AE426082}
     TabOrder = 2
-    Visible = False
     OnClick = btnMigracaoClick
   end
 end

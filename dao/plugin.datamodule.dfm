@@ -1,5 +1,5 @@
 object dmConexao: TdmConexao
-  OldCreateOrder = False
+  OldCreateOrder = True
   OnCreate = DataModuleCreate
   OnDestroy = DataModuleDestroy
   Height = 399
@@ -20,7 +20,7 @@ object dmConexao: TdmConexao
     Top = 144
   end
   object FDGUIxWaitCursor1: TFDGUIxWaitCursor
-    Provider = 'Forms'
+    Provider = 'Console'
     Left = 80
     Top = 224
   end

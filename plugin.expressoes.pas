@@ -34,6 +34,12 @@ type
     edValorPadrao: TEdit;
     btnGerarValorPadrao: TButton;
     btnGerarSQLConversao: TButton;
+    rbSelectFromTable: TRadioButton;
+    edTabelaEstrangeira: TEdit;
+    Label2: TLabel;
+    edCampoEstrangeiro: TEdit;
+    Label3: TLabel;
+    btnGerarSelectFromTable: TButton;
     procedure rbOpcaoIifClick(Sender: TObject);
     procedure btnGerarIFClick(Sender: TObject);
     procedure btnAdicionarCASEClick(Sender: TObject);
@@ -41,6 +47,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure btnGerarSQLConversaoClick(Sender: TObject);
     procedure btnGerarValorPadraoClick(Sender: TObject);
+    procedure btnGerarSelectFromTableClick(Sender: TObject);
   private
     FCampoOrigem, FCampoDestino, FTipoCampoOrigem, FTipoCampoDestino, FTamanhoDestino: string;
     FCase: string;
@@ -77,6 +84,11 @@ begin
                                                                               edSEVerdadeiro.Text,
                                                                               edSEFalso.Text,
                                                                               FCampoDestino])
+end;
+
+procedure TfmMontarExperssao.btnGerarSelectFromTableClick(Sender: TObject);
+begin
+  mmResultado.Lines.Text := '/*#'+FCampoOrigem+'-'+edTabelaEstrangeira.Text+'-'+edCampoEstrangeiro.Text+'#*/'+' -1 as '+FCampoDestino;
 end;
 
 procedure TfmMontarExperssao.btnGerarSQLConversaoClick(Sender: TObject);

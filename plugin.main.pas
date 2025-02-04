@@ -8,7 +8,7 @@ uses
   plugin.controller.tables, uUtils, Vcl.StdCtrls, plugin.controller.links,
   plugin.controller.schemas, plugin.cadastros, plugin.servico.manutencao,
   cxGraphics, cxLookAndFeels, cxLookAndFeelPainters, Vcl.Menus, cxButtons,
-  plugin.clonar;
+  plugin.migrar;
 
 type
   TfmrMainPlugin = class(TForm)
@@ -42,11 +42,11 @@ end;
 
 procedure TfmrMainPlugin.btnMigracaoClick(Sender: TObject);
 begin
-  fmClonarBancoDados := TfmClonarBancoDados.Create(Self);
+  fmMigrarBancoDados := TfmMigrarBancoDados.Create(Self);
   try
-    fmClonarBancoDados.ShowModal;
+    fmMigrarBancoDados.ShowModal;
   finally
-    fmClonarBancoDados.Free;
+    fmMigrarBancoDados.Free;
   end;
 end;
 

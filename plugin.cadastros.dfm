@@ -56,7 +56,7 @@ object fmCadastros: TfmCadastros
     Top = 0
     Width = 1099
     Height = 588
-    ActivePage = tsCadBancoDados
+    ActivePage = tsCadLinksCampos
     Align = alClient
     TabOrder = 1
     object tsCadBancoDados: TTabSheet
@@ -736,23 +736,6 @@ object fmCadastros: TfmCadastros
         Color = clInfoBk
         ParentBackground = False
         TabOrder = 1
-        object grListaSchemas: TDBGrid
-          AlignWithMargins = True
-          Left = 3
-          Top = 3
-          Width = 628
-          Height = 525
-          Align = alClient
-          BorderStyle = bsNone
-          DataSource = dsSchemas
-          Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgTitleClick, dgTitleHotTrack]
-          TabOrder = 0
-          TitleFont.Charset = DEFAULT_CHARSET
-          TitleFont.Color = clWindowText
-          TitleFont.Height = -13
-          TitleFont.Name = 'Tahoma'
-          TitleFont.Style = []
-        end
         object pnlButtonsSchemas: TPanel
           AlignWithMargins = True
           Left = 3
@@ -762,7 +745,7 @@ object fmCadastros: TfmCadastros
           Align = alBottom
           BevelKind = bkFlat
           BevelOuter = bvNone
-          TabOrder = 1
+          TabOrder = 0
           object btnNovoSchema: TButton
             AlignWithMargins = True
             Left = 3
@@ -803,6 +786,72 @@ object fmCadastros: TfmCadastros
             Colors.PressedText = clRed
             TabOrder = 2
             OnClick = btnDeletaSchemaClick
+          end
+        end
+        object pcSchemas: TPageControl
+          Left = 0
+          Top = 0
+          Width = 634
+          Height = 531
+          ActivePage = tsSchemaSincronia
+          Align = alClient
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -16
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+          TabOrder = 1
+          object tsSchemaSincronia: TTabSheet
+            Caption = 'Schema de Sincronia'
+            object grListaSchemas: TDBGrid
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
+              Width = 620
+              Height = 491
+              Align = alClient
+              DataSource = dsSchemas
+              Font.Charset = DEFAULT_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = 'Tahoma'
+              Font.Style = []
+              Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgTitleClick, dgTitleHotTrack]
+              ParentFont = False
+              TabOrder = 0
+              TitleFont.Charset = DEFAULT_CHARSET
+              TitleFont.Color = clWindowText
+              TitleFont.Height = -13
+              TitleFont.Name = 'Tahoma'
+              TitleFont.Style = []
+            end
+          end
+          object tsSchemaMigracao: TTabSheet
+            Caption = 'Schema de Migra'#231#227'o'
+            ImageIndex = 1
+            object grListaMigracao: TDBGrid
+              AlignWithMargins = True
+              Left = 3
+              Top = 3
+              Width = 620
+              Height = 491
+              Align = alClient
+              DataSource = dsMigracao
+              Font.Charset = DEFAULT_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -13
+              Font.Name = 'Tahoma'
+              Font.Style = []
+              Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgTitleClick, dgTitleHotTrack]
+              ParentFont = False
+              TabOrder = 0
+              TitleFont.Charset = DEFAULT_CHARSET
+              TitleFont.Color = clWindowText
+              TitleFont.Height = -13
+              TitleFont.Name = 'Tahoma'
+              TitleFont.Style = []
+            end
           end
         end
       end
@@ -1219,11 +1268,9 @@ object fmCadastros: TfmCadastros
           object btnSalvarCamposLinks: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 5
+            Top = 3
             Width = 75
-            Height = 24
-            Margins.Top = 5
-            Margins.Bottom = 5
+            Height = 28
             Align = alLeft
             Caption = 'Salvar'
             Font.Charset = DEFAULT_CHARSET
@@ -1234,15 +1281,15 @@ object fmCadastros: TfmCadastros
             ParentFont = False
             TabOrder = 0
             OnClick = btnSalvarCamposLinksClick
+            ExplicitTop = 5
+            ExplicitHeight = 24
           end
           object btnAlterarWhere: TButton
             AlignWithMargins = True
             Left = 165
-            Top = 5
+            Top = 3
             Width = 75
-            Height = 24
-            Margins.Top = 5
-            Margins.Bottom = 5
+            Height = 28
             Align = alLeft
             Caption = '"Where"'
             Font.Charset = DEFAULT_CHARSET
@@ -1253,6 +1300,8 @@ object fmCadastros: TfmCadastros
             ParentFont = False
             TabOrder = 1
             OnClick = btnAlterarWhereClick
+            ExplicitTop = 5
+            ExplicitHeight = 24
           end
           object btnRemoverLinkCampo: TcxButton
             AlignWithMargins = True
@@ -2398,5 +2447,38 @@ object fmCadastros: TfmCadastros
     Filter = 'Arquivo SQL|*.sql'
     Left = 707
     Top = 103
+  end
+  object dsMigracao: TDataSource
+    AutoEdit = False
+    DataSet = fmtMigracao
+    OnStateChange = dsSchemasStateChange
+    Left = 184
+    Top = 248
+  end
+  object fmtMigracao: TFDMemTable
+    AfterClose = fmtSchemasAfterClose
+    AfterInsert = fmtSchemasAfterInsert
+    AfterEdit = fmtMigracaoAfterEdit
+    AfterPost = fmtSchemasAfterPost
+    AfterCancel = fmtSchemasAfterCancel
+    FetchOptions.AssignedValues = [evMode]
+    FetchOptions.Mode = fmAll
+    ResourceOptions.AssignedValues = [rvSilentMode]
+    ResourceOptions.SilentMode = True
+    UpdateOptions.AssignedValues = [uvCheckRequired, uvAutoCommitUpdates]
+    UpdateOptions.CheckRequired = False
+    UpdateOptions.AutoCommitUpdates = True
+    Left = 192
+    Top = 256
+    object fmtMigracaoDESCRICAO: TStringField
+      DisplayLabel = 'Descri'#231#227'o'
+      FieldName = 'DESCRICAO'
+      Size = 100
+    end
+    object fmtMigracaoDIR_ARQUIVO: TStringField
+      FieldName = 'DIR_ARQUIVO'
+      Visible = False
+      Size = 500
+    end
   end
 end

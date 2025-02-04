@@ -19,7 +19,8 @@ uses
   udmAPI in 'utils\udmAPI.pas' {dmAPI: TDataModule},
   plugin.selecao.tabela.join in 'plugin.selecao.tabela.join.pas' {fmSelecionarTabelaJoin},
   plugin.monta.where in 'plugin.monta.where.pas' {fmMontaWhere},
-  plugin.clonar in 'plugin.clonar.pas' {fmClonarBancoDados};
+  plugin.migrar in 'plugin.migrar.pas' {fmMigrarBancoDados},
+  plugin.schemas in 'plugin.schemas.pas' {fmSchemas};
 
 {$R *.res}
 
