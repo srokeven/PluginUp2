@@ -10,12 +10,10 @@ object fmSchemas: TfmSchemas
   Font.Height = -13
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poScreenCenter
   WindowState = wsMaximized
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  PixelsPerInch = 96
   TextHeight = 16
   object pcPrincipal: TPageControl
     Left = 0
@@ -25,6 +23,8 @@ object fmSchemas: TfmSchemas
     ActivePage = tsCampos
     Align = alClient
     TabOrder = 0
+    ExplicitWidth = 1043
+    ExplicitHeight = 630
     object tsTabelas: TTabSheet
       Caption = 'tsTabelas'
       TabVisible = False
@@ -156,6 +156,7 @@ object fmSchemas: TfmSchemas
         Color = clTeal
         ParentBackground = False
         TabOrder = 0
+        ExplicitHeight = 620
         object grCamposOrigem: TDBGrid
           AlignWithMargins = True
           Left = 3
@@ -200,6 +201,7 @@ object fmSchemas: TfmSchemas
         Align = alLeft
         ParentBackground = False
         TabOrder = 1
+        ExplicitHeight = 620
         DesignSize = (
           212
           629)
@@ -598,15 +600,16 @@ object fmSchemas: TfmSchemas
           Left = 8
           Top = 472
           Width = 193
-          Height = 118
+          Height = 119
           Anchors = [akLeft, akTop, akBottom]
           TabOrder = 1
+          ExplicitHeight = 110
         end
         object btnAdicionarLink: TButton
-          Left = 7
-          Top = 596
+          Left = 6
+          Top = 597
           Width = 194
-          Height = 27
+          Height = 28
           Anchors = [akLeft, akBottom]
           Caption = 'Criar link'
           Font.Charset = DEFAULT_CHARSET
@@ -618,6 +621,7 @@ object fmSchemas: TfmSchemas
           TabOrder = 2
           StyleElements = []
           OnClick = btnAdicionarLinkClick
+          ExplicitTop = 588
         end
         object btnGerarExpressao: TButton
           Left = 125
@@ -647,12 +651,13 @@ object fmSchemas: TfmSchemas
         Color = clSkyBlue
         ParentBackground = False
         TabOrder = 2
+        ExplicitHeight = 620
         object grCamposDestino: TDBGrid
           AlignWithMargins = True
           Left = 3
-          Top = 3
+          Top = 31
           Width = 255
-          Height = 619
+          Height = 591
           Align = alClient
           DataSource = dsCamposDestino
           Font.Charset = DEFAULT_CHARSET
@@ -669,6 +674,18 @@ object fmSchemas: TfmSchemas
           TitleFont.Name = 'Tahoma'
           TitleFont.Style = []
         end
+        object btnLinkAutomatico: TButton
+          AlignWithMargins = True
+          Left = 3
+          Top = 3
+          Width = 255
+          Height = 25
+          Margins.Bottom = 0
+          Align = alTop
+          Caption = 'Criar link automatico para tabelas iguais'
+          TabOrder = 1
+          OnClick = btnLinkAutomaticoClick
+        end
       end
       object pnlListaLinksCriados: TPanel
         Left = 742
@@ -680,29 +697,32 @@ object fmSchemas: TfmSchemas
         BevelOuter = bvNone
         ParentBackground = False
         TabOrder = 3
+        ExplicitWidth = 293
+        ExplicitHeight = 620
         object lbListaCamposLink: TListBox
           AlignWithMargins = True
           Left = 3
           Top = 3
           Width = 289
-          Height = 554
+          Height = 506
           Align = alClient
           TabOrder = 0
+          ExplicitHeight = 486
         end
         object Panel3: TPanel
           Left = 0
-          Top = 560
+          Top = 512
           Width = 295
-          Height = 65
+          Height = 113
           Align = alBottom
           BevelOuter = bvNone
           TabOrder = 1
           object btnSalvarCamposLinks: TButton
             AlignWithMargins = True
             Left = 3
-            Top = 29
+            Top = 78
             Width = 75
-            Height = 33
+            Height = 32
             Align = alLeft
             Caption = 'Salvar'
             Font.Charset = DEFAULT_CHARSET
@@ -713,13 +733,15 @@ object fmSchemas: TfmSchemas
             ParentFont = False
             TabOrder = 0
             OnClick = btnSalvarCamposLinksClick
+            ExplicitTop = 52
+            ExplicitHeight = 42
           end
           object btnAlterarWhere: TButton
             AlignWithMargins = True
             Left = 165
-            Top = 29
-            Width = 75
-            Height = 33
+            Top = 78
+            Width = 76
+            Height = 32
             Align = alLeft
             Caption = '"Where"'
             Font.Charset = DEFAULT_CHARSET
@@ -730,13 +752,15 @@ object fmSchemas: TfmSchemas
             ParentFont = False
             TabOrder = 1
             OnClick = btnAlterarWhereClick
+            ExplicitTop = 52
+            ExplicitHeight = 42
           end
           object btnRemoverLinkCampo: TcxButton
             AlignWithMargins = True
-            Left = 217
-            Top = 29
-            Width = 75
-            Height = 33
+            Left = 216
+            Top = 78
+            Width = 76
+            Height = 32
             Align = alRight
             Caption = 'Remover'
             Colors.Default = clRed
@@ -749,13 +773,16 @@ object fmSchemas: TfmSchemas
             Colors.PressedText = clRed
             TabOrder = 2
             OnClick = btnRemoverLinkCampoClick
+            ExplicitLeft = 210
+            ExplicitTop = 52
+            ExplicitHeight = 42
           end
           object btnCancelaCamposLink: TcxButton
             AlignWithMargins = True
             Left = 84
-            Top = 29
+            Top = 78
             Width = 75
-            Height = 33
+            Height = 32
             Align = alLeft
             Caption = 'Cancelar'
             Colors.Default = clRed
@@ -768,6 +795,8 @@ object fmSchemas: TfmSchemas
             Colors.PressedText = clRed
             TabOrder = 3
             OnClick = btnCancelaCamposLinkClick
+            ExplicitTop = 52
+            ExplicitHeight = 42
           end
           object chkSchemaUpdate: TCheckBox
             AlignWithMargins = True
@@ -779,6 +808,31 @@ object fmSchemas: TfmSchemas
             Caption = 'Schema de atualiza'#231#227'o'
             Constraints.MaxHeight = 20
             TabOrder = 4
+            ExplicitWidth = 283
+          end
+          object chkExecucaoIndividual: TCheckBox
+            AlignWithMargins = True
+            Left = 3
+            Top = 29
+            Width = 289
+            Height = 17
+            Align = alTop
+            Caption = 'Execu'#231#227'o individual'
+            TabOrder = 5
+            ExplicitWidth = 283
+          end
+          object chkInsertIncremental: TCheckBox
+            AlignWithMargins = True
+            Left = 3
+            Top = 52
+            Width = 289
+            Height = 20
+            Align = alTop
+            Caption = 'Schema Incremental'
+            Constraints.MaxHeight = 20
+            TabOrder = 6
+            ExplicitLeft = 4
+            ExplicitTop = 61
           end
         end
       end

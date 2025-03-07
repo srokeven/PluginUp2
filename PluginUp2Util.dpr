@@ -20,7 +20,9 @@ uses
   plugin.selecao.tabela.join in 'plugin.selecao.tabela.join.pas' {fmSelecionarTabelaJoin},
   plugin.monta.where in 'plugin.monta.where.pas' {fmMontaWhere},
   plugin.migrar in 'plugin.migrar.pas' {fmMigrarBancoDados},
-  plugin.schemas in 'plugin.schemas.pas' {fmSchemas};
+  plugin.schemas in 'plugin.schemas.pas' {fmSchemas},
+  Vcl.Themes,
+  Vcl.Styles;
 
 {$R *.res}
 
@@ -28,6 +30,7 @@ begin
   //ReportMemoryLeaksOnShutdown := True;
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
+  TStyleManager.TrySetStyle('Windows10');
   Application.CreateForm(TfmrMainPlugin, fmrMainPlugin);
   Application.Run;
 end.

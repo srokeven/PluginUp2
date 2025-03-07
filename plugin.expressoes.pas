@@ -88,7 +88,7 @@ end;
 
 procedure TfmMontarExperssao.btnGerarSelectFromTableClick(Sender: TObject);
 begin
-  mmResultado.Lines.Text := '/*#'+FCampoOrigem+'-'+edTabelaEstrangeira.Text+'-'+edCampoEstrangeiro.Text+'#*/'+' -1 as '+FCampoDestino;
+  mmResultado.Lines.Text := '/*#'+FCampoOrigem+'-'+edTabelaEstrangeira.Text+'-'+edCampoEstrangeiro.Text+'#*/'+' '+FCampoOrigem+' as '+FCampoDestino;
 end;
 
 procedure TfmMontarExperssao.btnGerarSQLConversaoClick(Sender: TObject);
@@ -152,6 +152,9 @@ begin
   edValorPadrao.Enabled := rbValorPadrao.Checked;
   btnGerarValorPadrao.Enabled := rbValorPadrao.Checked;
   btnGerarSQLConversao.Enabled := rbConverter.Checked;
+  edTabelaEstrangeira.Enabled := rbSelectFromTable.Checked;
+  edCampoEstrangeiro.Enabled := rbSelectFromTable.Checked;
+  btnGerarSelectFromTable.Enabled := rbSelectFromTable.Checked;
 end;
 
 procedure TfmMontarExperssao.TratarTextos(ACampoOrigem, ACampoDestino, ATipoCampoOrigem, ATipoCampoDestino, ATamanhoDestino: string);

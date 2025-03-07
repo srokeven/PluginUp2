@@ -1,9 +1,9 @@
 object dmConexao: TdmConexao
-  OldCreateOrder = True
   OnCreate = DataModuleCreate
   OnDestroy = DataModuleDestroy
-  Height = 399
-  Width = 575
+  Height = 499
+  Width = 719
+  PixelsPerInch = 120
   object ConexaoOrigem: TFDConnection
     Params.Strings = (
       'DriverID=FB'
@@ -12,17 +12,17 @@ object dmConexao: TdmConexao
     UpdateOptions.AssignedValues = [uvAutoCommitUpdates]
     UpdateOptions.AutoCommitUpdates = True
     LoginPrompt = False
-    Left = 88
-    Top = 56
+    Left = 110
+    Top = 70
   end
   object FDPhysFBDriverLink1: TFDPhysFBDriverLink
-    Left = 88
-    Top = 144
+    Left = 110
+    Top = 180
   end
   object FDGUIxWaitCursor1: TFDGUIxWaitCursor
     Provider = 'Console'
-    Left = 80
-    Top = 224
+    Left = 100
+    Top = 280
   end
   object ConexaoDestino: TFDConnection
     Params.Strings = (
@@ -32,8 +32,8 @@ object dmConexao: TdmConexao
     UpdateOptions.AssignedValues = [uvAutoCommitUpdates]
     UpdateOptions.AutoCommitUpdates = True
     LoginPrompt = False
-    Left = 184
-    Top = 56
+    Left = 230
+    Top = 70
   end
   object Conexao: TFDConnection
     Params.Strings = (
@@ -43,8 +43,8 @@ object dmConexao: TdmConexao
     UpdateOptions.AssignedValues = [uvAutoCommitUpdates]
     UpdateOptions.AutoCommitUpdates = True
     LoginPrompt = False
-    Left = 280
-    Top = 56
+    Left = 350
+    Top = 70
   end
   object Scripts: TFDScript
     SQLScripts = <
@@ -149,7 +149,7 @@ object dmConexao: TdmConexao
     Connection = ConexaoOrigem
     Params = <>
     Macros = <>
-    Left = 352
-    Top = 200
+    Left = 440
+    Top = 250
   end
 end

@@ -110,6 +110,9 @@ type
     fmtCamposDestinoUSADO: TIntegerField;
     dsCamposDestino: TDataSource;
     chkSchemaUpdate: TCheckBox;
+    chkExecucaoIndividual: TCheckBox;
+    btnLinkAutomatico: TButton;
+    chkInsertIncremental: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure fmtTabelasOrigemSELGetText(Sender: TField; var Text: string; DisplayText: Boolean);
@@ -124,6 +127,7 @@ type
     procedure fmtCamposOrigemTIPOGetText(Sender: TField; var Text: string; DisplayText: Boolean);
     procedure fmtCamposDestinoTIPOGetText(Sender: TField; var Text: string; DisplayText: Boolean);
     procedure btnAlterarWhereClick(Sender: TObject);
+    procedure btnLinkAutomaticoClick(Sender: TObject);
   private
     flbListaArquivos: TFileSearch;
     FLink: TPluginLink;
@@ -227,20 +231,39 @@ begin
   end;
 end;
 
+procedure TfmSchemas.btnLinkAutomaticoClick(Sender: TObject);
+begin
+  if ShowQuestion('Deseja criar link automatico para os campos iguais?') then
+  begin
+    if lbListaCamposLink.Count > 0 then
+      raise Exception.Create('Limpe os campos anteriores antes de continuar');
+    fmtCamposOrigem.First;
+    while not (fmtCamposOrigem.Eof) do
+    begin
+      if fmtCamposDestino.Locate('CAMPO', fmtCamposOrigemCAMPO.AsString, [loCaseInsensitive]) then
+        btnAdicionarLinkClick(btnAdicionarLink);
+      fmtCamposOrigem.Next;
+    end;
+  end;
+end;
+
 procedure TfmSchemas.btnRemoverLinkCampoClick(Sender: TObject);
 var
-  lCampoOrigem, lCampoDestino: string;
+  lCampoOrigem, lCampoDestino, lTabelaOrigem: string;
 begin
   if lbListaCamposLink.ItemIndex < 0 then
   begin
     raise Exception.Create('Nenhum item selecionado');
   end;
+  lTabelaOrigem := FLink.TabelaOrigem;
   lCampoOrigem := ExtrairTextoAPartirDePosicao(lbListaCamposLink.Items[lbListaCamposLink.ItemIndex], ' --> ', EXTRAIR_PRE_TRECHO);
   if lCampoOrigem = '.' then
     lCampoOrigem := EmptyStr;
+  if lCampoOrigem.IsEmpty then
+    lTabelaOrigem := EmptyStr;
   lCampoDestino := ExtrairTextoAPartirDePosicao(lbListaCamposLink.Items[lbListaCamposLink.ItemIndex], ' --> ', EXTRAIR_POS_TRECHO);
   if FLink.RemoverLinkFields(
-       lCampoOrigem,
+       lTabelaOrigem,
        IfThen(ExtrairCampoJoin(lCampoOrigem).IsEmpty, lCampoOrigem, ExtrairCampoJoin(lCampoOrigem)),
        lCampoDestino
   ) then
@@ -287,7 +310,16 @@ begin
       FLink.SetSchemaUpdate
     else
       FLink.SetSchemaInsert;
-    if FLink.SalvarArquivo(DirSchemasMigracao, FSistemaOrigem+'_'+FLink.TabelaDestino) then
+    if chkExecucaoIndividual.Checked then
+      FLink.SetExecucaoIndividual
+    else
+      FLink.SetExecucaoEmGrupo;
+    if chkInsertIncremental.Checked then
+      FLink.SetExecucaoIncremental
+    else
+      FLink.SetExecucaoPadrao;
+
+    if FLink.SalvarArquivo(DirSchemasMigracao, IfThen(FLink.NomeArquivo.IsEmpty, FSistemaOrigem+'_'+FLink.TabelaDestino, FLink.NomeArquivo)) then
       ModalResult := mrOk;
   end;
 end;
@@ -463,9 +495,12 @@ procedure TfmSchemas.CarregarSchemaLinks(AArquivo: string);
 begin
   lbListaCamposLink.Items.Clear;
   FLink := TPluginLink.Novo(LerJsonFromFile(AArquivo));
+  FLink.NomeArquivo := ExtractName(AArquivo);
   CarregarCamposTabelaOrigem(IncludeTrailingPathDelimiter(DirSchemasMigracaoTabelasOrigem(FSistemaOrigem))+FLink.TabelaOrigem+'.json', False);
   CarregarCamposTabelaDestino(IncludeTrailingPathDelimiter(DirSchemasMigracaoTabelasOrigem(MV))+FLink.TabelaDestino+'.json', False);
   chkSchemaUpdate.Checked := not (FLink.SchemaInsert);
+  chkExecucaoIndividual.Checked := not (FLink.SchemaExecucaoGrupo);
+  chkInsertIncremental.Checked := FLink.SchemaExecucaoIncremental;
   pcPrincipal.ActivePage := tsCampos;
 end;
 

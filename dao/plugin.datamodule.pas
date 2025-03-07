@@ -3,14 +3,11 @@ unit plugin.datamodule;
 interface
 
 uses
-  System.SysUtils, System.Classes, FireDAC.Stan.Intf, FireDAC.Stan.Option,
-  FireDAC.Stan.Error, FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def,
-  FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.FB,
-  FireDAC.Phys.FBDef, FireDAC.Comp.UI, FireDAC.Phys.IBBase,
-  Data.DB, FireDAC.Comp.Client, uUtils, DataSet.Serialize, FireDAC.Stan.Param,
-  FireDAC.DatS, FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Comp.DataSet,
-  FireDAC.Comp.ScriptCommands, FireDAC.Stan.Util, FireDAC.Comp.Script,
-  System.JSON, FireDAC.ConsoleUI.Wait;
+  System.SysUtils, System.Classes, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error, FireDAC.UI.Intf,
+  FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.FB,
+  FireDAC.Phys.FBDef, FireDAC.Comp.UI, FireDAC.Phys.IBBase, Data.DB, FireDAC.Comp.Client, uUtils, DataSet.Serialize,
+  FireDAC.Stan.Param, FireDAC.DatS, FireDAC.DApt.Intf, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.ScriptCommands,
+  FireDAC.Stan.Util, FireDAC.Comp.Script, System.JSON, FireDAC.ConsoleUI.Wait;
 
 type
   TdmConexao = class(TDataModule)
@@ -24,9 +21,11 @@ type
     procedure DataModuleCreate(Sender: TObject);
   private
     FQuantidadeUltimaConsulta: integer;
-
+    FErroExecute: string;
+    function GetErroExecute: string;
   public
     property QuantidadeUltimaConsulta: integer read FQuantidadeUltimaConsulta write FQuantidadeUltimaConsulta;
+    property ErroExecute: string read GetErroExecute write FErroExecute;
     procedure ConectarOrigem(AJson: string);
     procedure ConectarDestino(AJson: string);
     procedure Conectar(AJson: string);
@@ -42,11 +41,17 @@ type
 
     function ConsultarESalvar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino,
       ABancoDestino: string; out OCaminhoArquivo: string): boolean;
+    function Consultar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino,
+      ABancoDestino: string): TJSONArray;
+
     function ExecutarDestino(ASqlInsert, AEstrutura, ATabelaOrigem, ABancoOrigem,
       ATabelaDestino, ABancoDestino: string): boolean;
+    function Executar(ASqlInsert, AEstrutura, ATabelaOrigem, ABancoOrigem,
+      ATabelaDestino, ABancoDestino, AJsonObjeto: string): boolean;
 
     function Select(ASQL: string): string; overload;
     function Select(AIndex: integer): string; overload;
+    function Select(ASQL: string; AConexao: TFDConnection): string; overload;
     procedure Execute(ASQL: string; AConexao: TFDConnection); overload;
     procedure Execute(ASQL: array of string; AConexao: TFDConnection); overload;
 
@@ -138,11 +143,41 @@ begin
   end;
 end;
 
+function TdmConexao.Consultar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino, ABancoDestino: string): TJSONArray;
+var
+  lQuery: TFDQuery;
+begin
+  FQuantidadeUltimaConsulta := 0;
+  lQuery := TFDQuery.Create(nil);
+  try
+    lQuery.Connection := ConexaoOrigem;         
+    try
+      lQuery.Open(ASelect);
+      lQuery.FetchAll;
+      if not (lQuery.IsEmpty) then
+      begin
+        FQuantidadeUltimaConsulta := lQuery.RecordCount;
+        GravaLog(
+          Format('Salvando %d registro da tabela %s do banco de dados %s para serem inseridos na tabela %s do banco de dados %s',
+            [lQuery.RecordCount, ATabelaOrigem, ABancoOrigem, ATabelaDestino, ABancoDestino])
+          , 'log');
+        Result := lQuery.ToJSONArray();
+      end
+      else
+        Result := TJSONArray.Create;
+    except
+      on e: exception do
+        GravaLog('Erro ao abrir a consulta de dados: '+e.Message, 'log');
+    end;
+  finally
+    lQuery.Free;
+  end;
+end;
+
 function TdmConexao.ConsultarESalvar(ASelect, ATabelaOrigem, ABancoOrigem, ATabelaDestino,
   ABancoDestino: string; out OCaminhoArquivo: string): boolean;
 var
   lNomeArquivo, lDiretorioArquivo: string;
-  lListaArquivos, lLinasArquivo: TStringList;
   lQuery: TFDQuery;
   LJSONArray: TJSONArray;
 begin
@@ -163,17 +198,13 @@ begin
       begin
         FQuantidadeUltimaConsulta := lQuery.RecordCount;
         GravaLog(
-         Format('Salvando %d registro da tabela %s do banco de dados %s para serem inseridos na tabela %s do banco de dados %s',
-         [lQuery.RecordCount, ATabelaOrigem, ABancoOrigem, ATabelaDestino, ABancoDestino])
+          Format('Salvando %d registro da tabela %s do banco de dados %s para serem inseridos na tabela %s do banco de dados %s',
+            [lQuery.RecordCount, ATabelaOrigem, ABancoOrigem, ATabelaDestino, ABancoDestino])
           , 'log');
-        lListaArquivos := TStringList.Create;
         try
           LJSONArray := lQuery.ToJSONArray();
-          lListaArquivos.Text := LJSONArray.toJSON;
-          lListaArquivos.SaveToFile(lDiretorioArquivo);
-          Result := True;
+          Result := GravaTextToFile(lDiretorioArquivo, LJSONArray.ToJSON);
         finally
-          lListaArquivos.Free;
           LJSONArray.Free;
         end;
       end;
@@ -228,6 +259,89 @@ end;
 function TdmConexao.DestinoConectado: boolean;
 begin
   Result := ConexaoDestino.Connected;
+end;
+
+function TdmConexao.Executar(ASqlInsert, AEstrutura, ATabelaOrigem, ABancoOrigem, ATabelaDestino,
+  ABancoDestino, AJsonObjeto: string): boolean;
+var
+  lQuery: TFDQuery;
+  lArrayEstruturaDestino: TJSONArray;
+  lJson: TJSONObject;
+  O: integer;
+begin
+  lQuery := TFDQuery.Create(nil);
+  try
+    lJson := TJSONObject.ParseJSONValue(AJsonObjeto) as TJSONObject;
+
+    lArrayEstruturaDestino := TJSONObject.ParseJSONValue( LerJsonArray(AEstrutura, 'links')) as TJSONArray;
+    try
+      lQuery.Connection := ConexaoDestino;
+      lQuery.SQL.Text := ASqlInsert;
+      for O := 0 to lArrayEstruturaDestino.Count - 1 do
+      begin
+        if not Assigned(lQuery.FindParam(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))) then
+          Continue;
+
+        case StrToIntDef(lArrayEstruturaDestino.Items[O].GetValue<string>('tipodestino'),0) of
+          0: begin
+            if not (lJson.GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).AsString :=
+              lJson.GetValue<string>(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))
+            else
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).Clear;
+          end;
+          1: begin
+            if not (lJson.GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).AsInteger :=
+              lJson.GetValue<integer>(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))
+            else
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).Clear;
+          end;
+          2: begin
+            if not (lJson.GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).AsFloat :=
+              lJson.GetValue<double>(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))
+            else
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).Clear;
+          end;
+          3: begin
+            if not (lJson.GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).AsDate :=
+              lJson.GetValue<TDate>(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))
+            else
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).Clear;
+          end;
+          4: begin
+            if not (lJson.GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).AsDateTime :=
+              lJson.GetValue<TDateTime>(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))
+            else
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).Clear;
+          end;
+          5: begin
+            if not (lJson.GetValue<TJSONValue>( lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino') ) is TJSONNull) then
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).AsMemo :=
+              lJson.GetValue<string>(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino'))
+            else
+              lQuery.ParamByName(lArrayEstruturaDestino.Items[O].GetValue<string>('campodestino')).Clear;
+          end;
+        end;
+      end;
+      lQuery.Execute();
+
+      Result := True;
+    except
+      on E: exception do
+      begin
+         GravaLog('Erro ao executar inserção de dados no banco de destino: '+e.Message+sLineBreak, 'log');
+         ErroExecute := E.Message;
+      end;
+    end;
+  finally
+    lQuery.Free;
+    lJson.Free;
+    lArrayEstruturaDestino.Free;
+  end;
 end;
 
 function TdmConexao.ExecutarDestino(ASqlInsert, AEstrutura, ATabelaOrigem, ABancoOrigem,
@@ -312,6 +426,7 @@ begin
         on E: exception do
         begin
            GravaLog('Erro ao executar inserção de dados no banco de destino: '+e.Message+sLineBreak+'Arquivo: '+lNomeArquivo, 'log');
+           ErroExecute := e.Message;
         end;
       end;
     finally
@@ -366,6 +481,12 @@ begin
   end;
 end;
 
+function TdmConexao.GetErroExecute: string;
+begin
+  Result := FErroExecute;
+  FErroExecute := EmptyStr;
+end;
+
 function TdmConexao.GetScript(AIndex: integer): string;
 begin
   Result := Scripts.SQLScripts.Items[AIndex].SQL.Text;
@@ -374,6 +495,25 @@ end;
 function TdmConexao.OrigemConectado: boolean;
 begin
   Result := ConexaoOrigem.Connected;
+end;
+
+function TdmConexao.Select(ASQL: string; AConexao: TFDConnection): string;
+var
+  lQuery: TFDQuery;
+  LJSONArray: TJSONArray;
+begin
+  if ASQL.IsEmpty then
+    Exit(EmptyStr);
+  lQuery := TFDQuery.Create(nil);
+  try
+    lQuery.Connection := AConexao;
+    lQuery.Open(ASQL);
+    LJSONArray := lQuery.ToJSONArray();
+    Result := LJSONArray.toJSON;
+  finally
+    lQuery.Free;
+    LJSONArray.Free;
+  end;
 end;
 
 function TdmConexao.Select(AIndex: integer): string;

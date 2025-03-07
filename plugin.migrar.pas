@@ -8,7 +8,7 @@ uses
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   Vcl.Grids, Vcl.DBGrids, Vcl.ComCtrls, FileSearchUnit, uUtils, System.StrUtils, plugin.schemas, cxGraphics,
   cxLookAndFeels, cxLookAndFeelPainters, Vcl.Menus, cxButtons, System.JSON, plugin.controller.links,
-  plugin.datamodule, System.IOUtils;
+  plugin.datamodule, System.IOUtils, Vcl.Themes, Vcl.Buttons;
 
 type
   TfmMigrarBancoDados = class(TForm)
@@ -71,14 +71,16 @@ type
     Panel7: TPanel;
     btnMoveUp: TcxButton;
     btnMoveDown: TcxButton;
-    tsPreferencias: TTabSheet;
-    Panel8: TPanel;
-    btnVoltarPreferencias: TButton;
-    btnProximoPreferencias: TButton;
-    chkContinuarSequencia: TCheckBox;
-    Memo1: TMemo;
     Shape2: TShape;
     btnPrepararBancoOrigem: TButton;
+    btnPrepararBancoDestino: TButton;
+    tsSQLs: TTabSheet;
+    mmSQLSequencia: TMemo;
+    cbTema: TComboBox;
+    lbProcessamento: TLabel;
+    SpeedButton1: TSpeedButton;
+    fodArquivo: TFileOpenDialog;
+    SpeedButton2: TSpeedButton;
     procedure FormShow(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -95,20 +97,38 @@ type
     procedure btnExcluirSchemaClick(Sender: TObject);
     procedure btnVoltarPreferenciasClick(Sender: TObject);
     procedure btnProximoPreferenciasClick(Sender: TObject);
-    procedure btnVoltarProcessoClick(Sender: TObject);
     procedure btnIniciarProcessoClick(Sender: TObject);
     procedure btnTestarBancoDadosClick(Sender: TObject);
     procedure btnTestarConexaoDadosDestinoClick(Sender: TObject);
     procedure btnPrepararBancoOrigemClick(Sender: TObject);
     procedure grBancoDadosTitleClick(Column: TColumn);
+    procedure btnPrepararBancoDestinoClick(Sender: TObject);
+    procedure cbTemaSelect(Sender: TObject);
+    procedure SpeedButton1Click(Sender: TObject);
+    procedure SpeedButton2Click(Sender: TObject);
   private
     flbListaArquivos: TFileSearch;
+    procedure VerificarOrigem;
+    procedure ExecutarSQLDestino(ASQL: string);
     function ConexaoOrigemToJson: string;
     function ConexaoDestinoToJson: string;
     procedure CarregarSchemas;
     procedure SalvarConfiguracoesOrdem;
     procedure MoveRecord(FromIndex, ToIndex: Integer);
-    procedure Log(ATexto: string);
+    procedure Log(ATexto: string; AAlteraUltimaLinha: boolean = false);
+    function TextProgressBar(APosicao, AMax: integer): string;
+    procedure PreencherDadosEmpresa;
+    procedure RecalcularSequenciaTabelas;
+    procedure CriarMovimentacao;
+    function MovimentaEstoqueCFe: boolean;
+    function MovimentaEstoqueNFCe: boolean;
+    function MovimentaEstoqueNFe: boolean;
+    function MovimentaEstoqueEntrada: boolean;
+    function DesfazMovimentaEstoqueCFe: boolean;
+    function DesfazMovimentaEstoqueEntrada: boolean;
+    function DesfazMovimentaEstoqueNFCe: boolean;
+    function DesfazMovimentaEstoqueNFe: boolean;
+    procedure InconsistenciaEstoque;
   public
     { Public declarations }
   end;
@@ -123,6 +143,20 @@ implementation
 const
   ORIGEM_MASTERVENDAS = 0;
   ORIGEM_UP2PDV = 1;
+  MOV_SAIDA_STR = '0';
+  MOV_ENTRADA_STR = '1';
+  TP_MOVIMENTO_ESTOQUE_CFE = 1;
+  TP_MOVIMENTO_ESTOQUE_CFE_CANCELAMENTO = 10;
+  TP_MOVIMENTO_ESTOQUE_NFCE = 2;
+  TP_MOVIMENTO_ESTOQUE_NFCE_CANCELAMENTO = 20;
+  TP_MOVIMENTO_ESTOQUE_NFE_SAIDA = 3;
+  TP_MOVIMENTO_ESTOQUE_NFE_SAIDA_CANCELAMENTO = 30;
+  TP_MOVIMENTO_ESTOQUE_NFE_ENTRADA = 4;
+  TP_MOVIMENTO_ESTOQUE_NFE_ENTRADA_CANCELAMENTO = 40;
+  TP_MOVIMENTO_ESTOQUE_ENTRADA = 5;
+  TP_MOVIMENTO_ESTOQUE_ENTRADA_CANCELAMENTO = 50;
+  TP_MOVIMENTO_ESTOQUE_AJUSTE = 6;
+  TP_MOVIMENTO_ESTOQUE_AJUSTE_CANCELAMENTO = 60;
 
 procedure TfmMigrarBancoDados.FormCreate(Sender: TObject);
 begin
@@ -229,9 +263,114 @@ begin
   end;
 end;
 
-procedure TfmMigrarBancoDados.Log(ATexto: string);
+procedure TfmMigrarBancoDados.InconsistenciaEstoque;
+var
+  lConexaoDestino: TdmConexao;
+  lProdutosInconsistentes: string;
+  lJson: TJSONArray;
+  I: Integer;
 begin
-  mmLogProcesso.Lines.Add(FormatDateTime('[dd/mm/yy hh:nn:ss:zzz]', now)+' --> '+ATexto);
+  lConexaoDestino := TdmConexao.Create(nil);
+  try
+    lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
+    if (lConexaoDestino.DestinoConectado) then
+    begin
+      Log('Verificando inconsistencia de estoque');
+      Log('Consultando');
+      lProdutosInconsistentes :=
+        lConexaoDestino.Select('select * '+
+                               'from (select PRO.ID, '+
+                                            'PRO.DESCRICAO, '+
+                                            'E.QUANTIDADE_REAL_INICIAL, '+
+                                            'E.QUANTIDADE_REAL, '+
+                                            '(select coalesce(sum(MF.QUANTIDADE), 0) '+
+                                            'from MOVIMENTO_FISCAL MF '+
+                                             'where MF.PRODUTO_ID = PRO.ID and '+
+                                                   'MF.MOVIMENTO_FINAL = 1 and '+
+                                                   'MF.ENTRADA_SAIDA_ESTOQUE = 0) TOTAL_SAIDAS, '+
+                                            '(select coalesce(sum(MF.QUANTIDADE), 0) '+
+                                             'from MOVIMENTO_FISCAL MF '+
+                                             'where MF.PRODUTO_ID = PRO.ID and '+
+                                                   'MF.MOVIMENTO_FINAL = 1 and '+
+                                                   'MF.ENTRADA_SAIDA_ESTOQUE = 1) TOTAL_ENTRADAS '+
+                                     'from PRODUTOS PRO '+
+                                     'join ESTOQUE E on E.PRODUTO_ID = PRO.ID) '+
+                               'where QUANTIDADE_REAL_INICIAL + TOTAL_ENTRADAS - TOTAL_SAIDAS <> QUANTIDADE_REAL', lConexaoDestino.ConexaoDestino);
+      lJson := TJSONValue.ParseJSONValue(lProdutosInconsistentes) as TJSONArray;
+      for I := 0 to lJson.Count - 1 do
+      begin
+        Log(TextProgressBar(I + 1, lJson.Count), True);
+        if lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) +
+           lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) -
+           lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0) > lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0) then //Saida
+          lConexaoDestino.Execute('insert into MOVIMENTO_FISCAL (PRODUTO_ID, '+
+                                                                'QUANTIDADE, '+
+                                                                'QUANTIDADE_ANTERIOR, '+
+                                                                'DATAMOVIMENTO, '+
+                                                                'DATACADASTRO, '+
+                                                                'HISTORICO, ' +
+                                                                'MOVIMENTO_FINAL, '+
+                                                                'MOVIMENTO_ID, '+
+                                                                'ENTRADA_SAIDA_ESTOQUE, '+
+                                                                'TIPO_MOVIMENTO_FIXO_ID) ' +
+                                  'values ('+lJson.Items[I].GetValue<string>('ID', '')+', '+
+                                          FloatToSQLFloat((lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) + lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) - lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0)) - lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0))+', '+
+                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0))+', '+
+                                          'current_timestamp, '+
+                                          'current_timestamp, '+
+                                          '''AJUSTE DE ESTOQUE INICIAL (SAÍDA)'', ' +
+                                          '1, '+
+                                          'null, '+
+                                          MOV_SAIDA_STR+', '+
+                                          TP_MOVIMENTO_ESTOQUE_AJUSTE.ToString+'); ', lConexaoDestino.ConexaoDestino);
+        if lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) +
+           lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) -
+           lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0) < lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0) then //Entrada
+          lConexaoDestino.Execute('insert into MOVIMENTO_FISCAL (PRODUTO_ID, '+
+                                                                'QUANTIDADE, '+
+                                                                'QUANTIDADE_ANTERIOR, '+
+                                                                'DATAMOVIMENTO, '+
+                                                                'DATACADASTRO, '+
+                                                                'HISTORICO, ' +
+                                                                'MOVIMENTO_FINAL, '+
+                                                                'MOVIMENTO_ID, '+
+                                                                'ENTRADA_SAIDA_ESTOQUE, '+
+                                                                'TIPO_MOVIMENTO_FIXO_ID) ' +
+                                  'values ('+lJson.Items[I].GetValue<string>('ID', '')+', '+
+                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0) - (lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) + lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) - lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0)))+', '+
+                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0))+', '+
+                                          'current_timestamp, '+
+                                          'current_timestamp, '+
+                                          '''AJUSTE DE ESTOQUE INICIAL (ENTRADA)'', ' +
+                                          '1, '+
+                                          'null, '+
+                                          MOV_ENTRADA_STR+', '+
+                                          TP_MOVIMENTO_ESTOQUE_AJUSTE.ToString+'); ', lConexaoDestino.ConexaoDestino);
+      end;
+      Log('Fim da verificação');
+    end;
+  finally
+    lConexaoDestino.Free;
+  end;
+end;
+
+procedure TfmMigrarBancoDados.Log(ATexto: string; AAlteraUltimaLinha: boolean = false);
+begin
+  if mmLogProcesso.Lines[mmLogProcesso.Lines.Count - 1] = ATexto then
+  begin
+    Application.ProcessMessages;
+    Exit;
+  end;
+  if AAlteraUltimaLinha then
+    mmLogProcesso.Lines[mmLogProcesso.Lines.Count - 1] := ATexto
+  else
+  begin
+    if mmLogProcesso.Lines[mmLogProcesso.Lines.Count - 1][1] = '[' then
+      mmLogProcesso.Lines[mmLogProcesso.Lines.Count - 1] := FormatDateTime('dd/mm/yy hh:nn:ss:zzz |', now)+' --> '+ATexto
+    else
+      mmLogProcesso.Lines.Add(FormatDateTime('dd/mm/yy hh:nn:ss:zzz |', now)+' --> '+ATexto);
+  end;
+  Application.ProcessMessages;
 end;
 
 procedure TfmMigrarBancoDados.MoveRecord(FromIndex, ToIndex: Integer);
@@ -281,6 +420,185 @@ begin
   end;
 end;
 
+procedure TfmMigrarBancoDados.PreencherDadosEmpresa;
+var
+  lConexaoDestino, lConexaoOrigem: TdmConexao;
+  lDadosEmpresa: string;
+  lJson: TJSONArray;
+begin
+  lConexaoDestino := TdmConexao.Create(nil);
+  lConexaoOrigem := TdmConexao.Create(nil);
+  try
+    lConexaoOrigem.ConectarOrigem(ConexaoOrigemToJson);
+    lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
+    if (lConexaoOrigem.OrigemConectado) and (lConexaoDestino.DestinoConectado) then
+    begin
+      mmLogProcesso.Lines.Add(' ');
+      mmLogProcesso.Lines.Add('####################################################################################################');
+      Log('Preenchendo dados da empresa nas configurações');
+      lDadosEmpresa := lConexaoOrigem.Select('select E.*, ' +
+                                                    'C.DESCRICAO CIDADE_EMPRESA, ' +
+                                                    'C.ID_CIDADES_UF, ' +
+                                                    'CC.DESCRICAO CIDADE_CONTADOR, ' +
+                                                    'CC.ID_CIDADES_UF UF_CONTADOR '+
+                                             'from TB_EMPRESA E ' +
+                                             'left join CIDADES C on C.ID_CIDADES_IBGE = E.CIDADE ' +
+                                             'left join CIDADES CC on CC.ID_CIDADES_IBGE = E.CONT_CIDADE', lConexaoOrigem.ConexaoOrigem);
+      lJson := TJSONValue.ParseJSONValue(lDadosEmpresa) as TJSONArray;
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''BAIRRO_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('BAIRRO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''CIDADE_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('CIDADE_EMPRESA', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''CNPJ_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('CNPJ', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''EMAIL_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('EMAIL', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''ENDERECO_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('ENDERECO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''IE_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('IE', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''NOMEEMPRESARELATORIO'', '+QuotedStr(lJson.Items[0].GetValue<string>('RAZAO_SOCIAL', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''NOMEFANTASIAEMPRESARELATORIO'', '+QuotedStr(lJson.Items[0].GetValue<string>('NOME_FANTASIA', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''CEP_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('CEP', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''CNAEEMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('CNAE', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''CODIGO_CIDADE_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('CIDADE', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''COMPLEMENTO_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('COMPLEMENTO', '0'))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORBAIRRO'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_BAIRRO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCEP'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_CEP', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCIDADE'', '+QuotedStr(lJson.Items[0].GetValue<string>('CIDADE_CONTADOR', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCODESTABELECIMENTO'', '+QuotedStr(lJson.Items[0].GetValue<string>('COD_EST_FORTES', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCODFORTES'', '+QuotedStr(lJson.Items[0].GetValue<string>('COD_FORTES', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCODIBGE'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_CIDADE', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCOMPLEMENTO'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_COMPLEMENTO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCPF'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_CPF', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORCRC'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_CRC', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADOREMAIL'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_EMAIL', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORENDERECO'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_ENDERECO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORID'', '+QuotedStr(lJson.Items[0].GetValue<string>('ID_COMPANY', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORNUMERO'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_NUMERO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORRAZAOSOCIAL'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_RAZAO_SOCIAL', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORTELEFONE'', '+QuotedStr(lJson.Items[0].GetValue<string>('CONT_FONE', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (1, ''CONTADORUF'', '+QuotedStr(lJson.Items[0].GetValue<string>('UF_CONTADOR', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''FONEEMPRESARELATORIO'', '+QuotedStr(lJson.Items[0].GetValue<string>('FONE', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''NUMERO_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('NUMERO', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''REGIMETRIBUTARIOEMPRESA'', '+QuotedStr(IntToStr(lJson.Items[0].GetValue<integer>('CRT', 1) - 1))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+
+      lConexaoDestino.Execute('update or insert into CONFIGURACOES (GRUPO, CODIGO, VALOR) ' +
+                              'values (0, ''UF_EMPRESA'', '+QuotedStr(lJson.Items[0].GetValue<string>('ID_CIDADES_UF', ''))+') ' +
+                              'matching (CODIGO)', lConexaoDestino.ConexaoDestino);
+      Log('Concluido configurações');
+    end;
+  finally
+    lConexaoDestino.Free;
+    lConexaoOrigem.Free;
+  end;
+end;
+
+procedure TfmMigrarBancoDados.RecalcularSequenciaTabelas;
+var
+  lConexaoDestino: TdmConexao;
+begin
+  lConexaoDestino := TdmConexao.Create(nil);
+  try
+    lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
+    if (lConexaoDestino.DestinoConectado) then
+    begin
+      Log('Recalculando sequencias');
+      //O SQL para recalcular as sequencias esta num memo numa tabsheet do pagecontrol principal
+      lConexaoDestino.Execute(mmSQLSequencia.Lines.Text, lConexaoDestino.ConexaoDestino);
+      Log('Concluido recalculando');
+    end;
+  finally
+    lConexaoDestino.Free;
+  end;
+end;
+
 procedure TfmMigrarBancoDados.SalvarConfiguracoesOrdem;
 var
   lJsonOrdem: TJSONArray;
@@ -295,8 +613,73 @@ begin
       fmtSchemas.Next;
     end;
   end;
-  GravarArrayJsonToFile(lJsonOrdem.ToJson, IncludeTrailingPathDelimiter(DirSchemasMigracaoTabelasConfiguracao)+'ordem.json');
+  GravarArrayJsonToFile(lJsonOrdem.ToJson, IncludeTrailingPathDelimiter(DirSchemasMigracaoTabelasConfiguracao)+IfThen(cbSistema.ItemIndex = ORIGEM_MASTERVENDAS, 'mv_', 'pdv_')+'ordem.json');
   lJsonOrdem.Free;
+end;
+
+procedure TfmMigrarBancoDados.SpeedButton1Click(Sender: TObject);
+begin
+  fodArquivo.DefaultFolder := ExtractFileDir(ParamStr(0));
+  if fodArquivo.Execute then
+    edCaminhoOrigem.Text := fodArquivo.FileName;
+end;
+
+procedure TfmMigrarBancoDados.SpeedButton2Click(Sender: TObject);
+begin
+  fodArquivo.DefaultFolder := ExtractFileDir(ParamStr(0));
+  if fodArquivo.Execute then
+    edCaminhoDestino.Text := fodArquivo.FileName;
+end;
+
+function TfmMigrarBancoDados.TextProgressBar(APosicao, AMax: integer): string;
+const
+  Animacao: array[0..3] of Char = ('-', '\', '|', '/');
+var
+  Progresso, Percentual: Integer;
+  Barra, Indicador, LayoutFinal: string;
+  IndexAnimacao: Integer;
+begin
+  if AMax <= 0 then
+    raise Exception.Create('O valor de AMax deve ser maior que zero.');
+  // Calcula a porcentagem do progresso
+  Percentual := Round((APosicao / AMax) * 100);
+  // Limita o valor do percentual entre 0 e 100
+  if Percentual < 0 then Percentual := 0;
+  if Percentual > 100 then Percentual := 100;
+  // Determina o caractere de animação baseado na posição (cíclico)
+  IndexAnimacao := (APosicao - 1) mod 4;
+  if IndexAnimacao = -1 then
+    IndexAnimacao := 0;
+  Indicador := Animacao[IndexAnimacao];
+  // Cria a barra de progresso usando '#' para progresso e '.' para o restante
+  Progresso := Percentual; // Progresso é igual ao percentual para 100 caracteres
+  Barra := StringOfChar('#', Progresso) + StringOfChar('.', 100 - Progresso);
+  // Formata o layout final com o indicador, barra e percentual
+  LayoutFinal := Format('[ %s %3d%% ]', [Barra, Percentual]);
+  // Retorna o layout final
+  Result := LayoutFinal;
+  lbProcessamento.Caption := Format('[ %s ]', [Indicador]);;
+end;
+
+procedure TfmMigrarBancoDados.VerificarOrigem;
+var
+  lConexaoOrigem: TdmConexao;
+begin
+  if cbSistema.ItemIndex = ORIGEM_UP2PDV then
+  begin
+    lConexaoOrigem := TdmConexao.Create(nil);
+    try
+      lConexaoOrigem.ConectarOrigem(ConexaoOrigemToJson);
+      if (lConexaoOrigem.OrigemConectado) then
+      begin
+        Log('Verificando campos');
+        if lConexaoOrigem.Select('select RDB$FIELD_NAME CAMPO from RDB$RELATION_FIELDS where RDB$RELATION_NAME = ''TB_NFE'' and RDB$FIELD_NAME = ''ID''', lConexaoOrigem.ConexaoOrigem) = '[]' then
+          btnPrepararBancoOrigemClick(btnPrepararBancoOrigem);
+      end;
+    finally
+      lConexaoOrigem.Free;
+    end;
+  end;
 end;
 
 procedure TfmMigrarBancoDados.btnProximoBancosClick(Sender: TObject);
@@ -364,11 +747,6 @@ begin
   pcPrincipal.ActivePage := tsLista;
 end;
 
-procedure TfmMigrarBancoDados.btnVoltarProcessoClick(Sender: TObject);
-begin
-  pcPrincipal.ActivePage := tsPreferencias;
-end;
-
 procedure TfmMigrarBancoDados.btnAlterarSchemaClick(Sender: TObject);
 begin
   TfmSchemas.Alterar(IfThen(cbSistema.ItemIndex = ORIGEM_MASTERVENDAS, MV, PDV), fmtSchemasDIR_ARQUIVO.AsString);
@@ -400,13 +778,16 @@ procedure TfmMigrarBancoDados.btnIniciarProcessoClick(Sender: TObject);
 var
   FLink: TPluginLink;
   lConexaoOrigem, lConexaoDestino: TdmConexao;
-  lCaminhoArquivo: string;
+  lCaminhoArquivo, lJsonLink, lSqlLink: string;
+  LJSONArray: TJSONArray;
+  I: Integer;
 begin
   if ShowQuestion('Deseja iniciar o processo de migração?') then
   begin
     mmLogProcesso.Lines.Add(' ');
-    mmLogProcesso.Lines.Add('##############################################################');
+    mmLogProcesso.Lines.Add('####################################################################################################');
     Log('Processo iniciado');
+    VerificarOrigem;
     fmtSchemas.First;
     while not (fmtSchemas.eof) do
     begin
@@ -414,57 +795,109 @@ begin
       begin
         Log('Carregando arquivo: '+fmtSchemasDESCRICAO.AsString);
         FLink := TPluginLink.Novo(LerJsonFromFile(fmtSchemasDIR_ARQUIVO.AsString));
-        Log('Consultando dados de: '+fmtSchemasDESCRICAO.AsString);
-        lConexaoOrigem := TdmConexao.Create(nil);
-        try
-          lConexaoOrigem.ConectarOrigem(ConexaoOrigemToJson);
-          if lConexaoOrigem.OrigemConectado then
-          begin
-            if lConexaoOrigem.ConsultarESalvar(FLink.GetSelectAll,
-                                               FLink.TabelaOrigem,
-                                               cbSistema.Text,
-                                               FLink.TabelaDestino,
-                                               lbSistemaDestino.Caption,
-                                               lCaminhoArquivo) then
+        if FLink.SchemaExecucaoGrupo then
+        begin
+          Log('Consultando dados de: '+fmtSchemasDESCRICAO.AsString);
+          lConexaoOrigem := TdmConexao.Create(nil);
+          try
+            lConexaoOrigem.ConectarOrigem(ConexaoOrigemToJson);
+            if lConexaoOrigem.OrigemConectado then
             begin
-              Log('Registros consultados: '+lConexaoOrigem.QuantidadeUltimaConsulta.ToString);
-            end
-            else
-              Log('Nenhum registro retornado na consulta'+' <-- AVISO');
-          end;
-        finally
-          lConexaoOrigem.Free;
-        end;
-        Log('Inserindo dados de: '+fmtSchemasDESCRICAO.AsString);
-        lConexaoDestino := TdmConexao.Create(nil);
-        try
-          lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
-          if lConexaoDestino.DestinoConectado then
-          begin
-            if lConexaoDestino.ExecutarDestino(IfThen(FLink.SchemaInsert, FLink.GetInsertAll(chkContinuarSequencia.Checked), FLink.GetUpdate),
-                                               FLink.Salvar,
-                                               FLink.TabelaOrigem,
-                                               cbSistema.Text,
-                                               FLink.TabelaDestino,
-                                               lbSistemaDestino.Caption) then
-            begin
-              if FileExists(lCaminhoArquivo) then
-                TFile.Move(lCaminhoArquivo, IncludeTrailingPathDelimiter(DirConsultasHistorico)+ExtractFileName(lCaminhoArquivo)+'_'+FormatDateTime('ddmmyyhhnnss',Now))
+              if lConexaoOrigem.ConsultarESalvar(FLink.GetSelectAll,
+                                                 FLink.TabelaOrigem,
+                                                 cbSistema.Text,
+                                                 FLink.TabelaDestino,
+                                                 lbSistemaDestino.Caption,
+                                                 lCaminhoArquivo) then
+              begin
+                Log('Registros consultados: '+lConexaoOrigem.QuantidadeUltimaConsulta.ToString);
+              end
               else
-                Log('Nenhum registro para migrar'+' <-- AVISO');
-            end
-            else
-              Log('Não foi possivel inserir os dados no destino'+' <-- ATENÇÃO');
+                Log('Nenhum registro retornado na consulta'+' <-- AVISO');
+            end;
+          finally
+            lConexaoOrigem.Free;
           end;
-        finally
-          lConexaoDestino.Free;
+          Log('Inserindo dados de: '+fmtSchemasDESCRICAO.AsString);
+          lConexaoDestino := TdmConexao.Create(nil);
+          try
+            lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
+            if lConexaoDestino.DestinoConectado then
+            begin
+              if lConexaoDestino.ExecutarDestino(IfThen(FLink.SchemaInsert, FLink.GetInsertAll(FLink.SchemaExecucaoIncremental), FLink.GetUpdate),
+                                                 FLink.Salvar,
+                                                 FLink.TabelaOrigem,
+                                                 cbSistema.Text,
+                                                 FLink.TabelaDestino,
+                                                 lbSistemaDestino.Caption) then
+              begin
+                if FileExists(lCaminhoArquivo) then
+                  TFile.Move(lCaminhoArquivo, IncludeTrailingPathDelimiter(DirConsultasHistorico)+ExtractFileName(lCaminhoArquivo)+'_'+FormatDateTime('ddmmyyhhnnss',Now))
+                else
+                  Log('Nenhum registro para migrar'+' <-- AVISO');
+              end
+              else
+                Log('Não foi possivel inserir os dados no destino: '+lConexaoDestino.ErroExecute+' <-- ATENÇÃO');
+            end;
+          finally
+            lConexaoDestino.Free;
+          end;
+        end
+        else
+        begin
+          Log('Consultando dados de: '+fmtSchemasDESCRICAO.AsString);
+          lConexaoOrigem := TdmConexao.Create(nil);
+          lConexaoDestino := TdmConexao.Create(nil);
+          try
+            lConexaoOrigem.ConectarOrigem(ConexaoOrigemToJson);
+            lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
+            if (lConexaoOrigem.OrigemConectado) and (lConexaoDestino.DestinoConectado) then
+            begin
+              LJSONArray := lConexaoOrigem.Consultar(FLink.GetSelectAll,
+                                                     FLink.TabelaOrigem,
+                                                     cbSistema.Text,
+                                                     FLink.TabelaDestino,
+                                                     lbSistemaDestino.Caption);
+              try
+                if lConexaoOrigem.QuantidadeUltimaConsulta > 0 then
+                begin
+                  Log('Registros consultados: '+lConexaoOrigem.QuantidadeUltimaConsulta.ToString);
+                  lJsonLink := FLink.Salvar;
+                  lSqlLink := IfThen(FLink.SchemaInsert, FLink.GetInsertAll(FLink.SchemaExecucaoIncremental), FLink.GetUpdate);
+                  for I := 0 to LJSONArray.Count - 1 do
+                  begin
+                    Log(TextProgressBar(I + 1, LJSONArray.Count), True);
+                    if not (lConexaoDestino.Executar(lSqlLink,
+                                                     lJsonLink,
+                                                     FLink.TabelaOrigem,
+                                                     cbSistema.Text,
+                                                     FLink.TabelaDestino,
+                                                     lbSistemaDestino.Caption,
+                                                     LJSONArray.Items[I].ToJSON)) then
+                    begin
+                      Log('Não foi possivel inserir o dado no destino: '+lConexaoDestino.ErroExecute+'; Objeto:'+LJSONArray.Items[I].ToJSON+' <-- ATENÇÃO');
+                      Log('Continua');
+                    end;
+                  end;
+                end
+                else
+                begin
+                  Log('Nenhum registro retornado na consulta'+' <-- AVISO');
+                end;
+              finally
+                LJSONArray.Free;
+              end;
+            end;
+          finally
+            lConexaoOrigem.Free;
+            lConexaoDestino.Free;
+          end;
         end;
         Log('Concluido: '+fmtSchemasDESCRICAO.AsString);
       end;
       fmtSchemas.Next;
     end;
-    //Dados da empresa
-    //Movimentação de estoque
+    btnPrepararBancoDestinoClick(btnPrepararBancoDestino);
     Log('Fim do processo');
   end;
 end;
@@ -479,6 +912,19 @@ procedure TfmMigrarBancoDados.btnMoveUpClick(Sender: TObject);
 begin
   if fmtSchemas.RecNo > 1 then
     MoveRecord(fmtSchemasORDEM.AsInteger, fmtSchemasORDEM.AsInteger - 1);
+end;
+
+procedure TfmMigrarBancoDados.btnPrepararBancoDestinoClick(Sender: TObject);
+begin
+  if ShowQuestion('Deseja preparar os dados no banco de destino?'+sLineBreak+
+                  ''+sLineBreak+
+                  'Ajustes de sequencias'+sLineBreak+
+                  'Dados da empresa') then
+  begin
+    PreencherDadosEmpresa;
+    RecalcularSequenciaTabelas;
+    CriarMovimentacao;
+  end;
 end;
 
 procedure TfmMigrarBancoDados.btnPrepararBancoOrigemClick(Sender: TObject);
@@ -551,6 +997,106 @@ begin
              'NP.NUMERO = N.NUMERO '+
           'when matched then '+
               'update set NP.TB_NFE_ID = N.ID ', lConexaoOrigem.ConexaoOrigem);
+
+        //Criando VIEW para totalizadores da nfe
+        lConexaoOrigem.Execute(
+          'create view VW_NOTA_FISCAL ( '+
+              'ID_NFE, '+
+              'TOT_PRODUTOS, '+
+              'ICMS_VBASE, '+
+              'ICMS_IMPOSTO, '+
+              'ICMSST_VBASE, '+
+              'ICMSST_IMPOSTO, '+
+              'TOT_SEGURO, '+
+              'TOT_DESCONTO, '+
+              'TOT_FRETE, '+
+              'TOT_PESO, '+
+              'TOT_DESPESAS, '+
+              'TOT_FCP, '+
+              'TOT_FCPST, '+
+              'TOT_FCPSTRET, '+
+              'TOT_IPI, '+
+              'TOT_PIS, '+
+              'TOT_COFINS, '+
+              'TOT_II, '+
+              'NORMAL_ICMS_MONO_TRIB_VICMS, '+
+              'NORMAL_ICMS_MONO_TRIB_VBASE, '+
+              'TOT_APROX_TRIBUTOS, '+
+              'TOT_VALOR_ICMS_UF_DEST, '+
+              'TOT_NOTA) as '+
+          'select ID_NFE, '+
+                 'sum(TMP.TOT_PRODUTOS) as TOT_PRODUTOS, '+
+                 'sum(TMP.ICMS_VBASE) as ICMS_VBASE, '+
+                 'sum(TMP.ICMS_IMPOSTO) as ICMS_IMPOSTO, '+
+                 'sum(TMP.ICMSST_VBASE) as ICMSST_VBASE, '+
+                 'sum(TMP.ICMSST_IMPOSTO) as ICMSST_IMPOSTO, '+
+                 'sum(TMP.TOT_SEGURO) as TOT_SEGURO, '+
+                 'sum(TMP.TOT_DESCONTO) as TOT_DESCONTO, '+
+                 'sum(TMP.TOT_FRETE) as TOT_FRETE, '+
+                 'sum(TMP.TOT_PESO_KG) as TOT_PESO, '+
+                 'sum(TMP.TOT_DESPESAS) as TOT_DESPESAS, '+
+                 'sum(TMP.TOT_FCP) as TOT_FCP, '+
+                 'sum(TMP.TOT_FCPST) as TOT_FCPST, '+
+                 'sum(TMP.TOT_FCPSTRET) as TOT_FCPSTRET, '+
+                 'sum(TMP.TOT_IPI) as TOT_IPI, '+
+                 'sum(TMP.TOT_PIS) as TOT_PIS, '+
+                 'sum(TMP.TOT_COFINS) as TOT_COFINS, '+
+                 'sum(TMP.TOT_VALOR_II) as TOT_II, '+
+                 'sum(TMP.NORMAL_ICMS_MONO_TRIB_VICMS) as NORMAL_ICMS_MONO_TRIB_VICMS, '+
+                 'sum(TMP.NORMAL_ICMS_MONO_TRIB_VBASE) as NORMAL_ICMS_MONO_TRIB_VBASE, '+
+                 'sum(TMP.TOT_APROX_TRIBUTOS) as TOT_APROX_TRIBUTOS, '+
+                 'sum(TMP.TOT_VALOR_ICMS_UF_DEST) as TOT_VALOR_ICMS_UF_DEST, '+
+                 'trunc(sum(TMP.TOT_PRODUTOS) + sum(TMP.TOT_FRETE) + sum(TMP.TOT_SEGURO) + sum(TMP.ICMSST_IMPOSTO) + sum(TMP.TOT_DESPESAS) + sum(TMP.TOT_IPI) - sum(TOT_DESCONTO), 2) as TOT_NOTA '+
+          'from (select NFE_ITEM.ID_NFE, '+
+                       'round(sum(TOTAL), 2) as TOT_PRODUTOS, '+ //PARA IMFORMAÇÕES DO REGIME NORMAL
+                       'sum(coalesce(NFE_ITEM.SIMPLES_ICMS_VBASE, 0.00)) as ICMS_VBASE, '+
+                       'sum(coalesce(NFE_ITEM.SIMPLES_ICMS_VICMS, 0.00)) as ICMS_IMPOSTO, '+
+                       'sum(coalesce(NFE_ITEM.SIMPLES_ST_VBASE, 0.00)) as ICMSST_VBASE, '+
+                       'sum(coalesce(NFE_ITEM.SIMPLES_ST_VST, 0.00)) as ICMSST_IMPOSTO, '+
+                       'sum(coalesce(TOT_SEGURO, 0.00)) as TOT_SEGURO, '+
+                       'sum(coalesce(TOT_DESCONTO, 0.00)) as TOT_DESCONTO, '+
+                       'sum(coalesce(TOT_FRETE, 0.00)) as TOT_FRETE, '+
+                       'sum(coalesce(TOT_PESO_KG, 0.00)) as TOT_PESO_KG, '+
+                       'sum(coalesce(OUT_DESPESAS, 0.00)) as TOT_DESPESAS, '+
+                       'sum(coalesce(NFE_ITEM.FCP_IMPOSTO, 0.00)) as TOT_FCP, '+
+                       'sum(coalesce(NFE_ITEM.FCP_ST_VIMPOSTO, 0.00)) as TOT_FCPST, '+
+                       'sum(coalesce(NFE_ITEM.FCP_ST_VIMPOSTO_RET, 0.00)) as TOT_FCPSTRET, '+
+                       'sum(round(coalesce(NFE_ITEM.IPI_VIMPOSTO, 0.00), 2)) as TOT_IPI, '+
+                       'sum(round(coalesce(NFE_ITEM.PIS_VIMPOSTO, 0.00), 2)) as TOT_PIS, '+
+                       'sum(round(coalesce(NFE_ITEM.COFINS_VIMPOSTO, 0.00), 2)) as TOT_COFINS, '+
+                       'sum(coalesce(TOT_APROX_TRIBUTOS, 0.00)) as TOT_APROX_TRIBUTOS, '+
+                       'sum(round(coalesce(NFE_ITEM.ICMSINTER_ICM_VIMPOSTO_UFDEST, 0), 2)) as TOT_VALOR_ICMS_UF_DEST, '+
+                       'sum(coalesce(NFE_ITEM.II_VALOR, 0)) as TOT_VALOR_II, '+
+                       'sum(coalesce(NFE_ITEM.NORMAL_ICMS_MONO_TRIB_VICMS, 0)) as NORMAL_ICMS_MONO_TRIB_VICMS, '+
+                       'sum(coalesce(NFE_ITEM.QT_TRIB, 0)) as NORMAL_ICMS_MONO_TRIB_VBASE '+ // O VALOR BASE E AQUANTIDADE TRIBUTADA DO PRODUTO
+                'from NFE_ITEM '+
+                'group by 1 '+
+                'union all '+
+                'select NFE_ITEM.ID_NFE, '+
+                       '0.00 as TOT_PRODUTOS, '+ // PARA IMFORMAÇÕES DO SIMPLES NACIONAL
+                       'sum(coalesce(NFE_ITEM.NORMAL_ICMS_VBASE, 0.00)) as ICMS_VBASE, '+
+                       'sum(coalesce(NFE_ITEM.NORMAL_ICMS_VICMS, 0.00)) as ICMS_IMPOSTO, '+
+                       'sum(coalesce(NFE_ITEM.NORMAL_ICMSST_VBASE, 0.00)) as ICMSST_VBASE, '+
+                       'sum(coalesce(NFE_ITEM.NORMAL_ICMSST_VICMS, 0.00)) as ICMSST_IMPOSTO, '+
+                       '0.00 as TOT_SEGURO, '+
+                       '0.00 as TOT_DESCONTO, '+
+                       '0.00 as TOT_FRETE, '+
+                       '0.00 as TOT_PESO_KG, '+
+                       '0.00 as TOT_DESPESAS, '+
+                       '0.00 as TOT_FCP, '+
+                       '0.00 as TOT_FCPST, '+
+                       '0.00 as TOT_FCPSTRET, '+
+                       '0.00 as TOT_IPI, '+
+                       '0.00 as TOT_PIS, '+
+                       '0.00 as TOT_COFINS, '+
+                       '0.00 as TOT_APROX_TRIBUTOS, '+
+                       '0.00 as TOT_VALOR_ICMS_UF_DEST, '+
+                       '0.00 as TOT_VALOR_II, '+
+                       '0.00 as NORMAL_ICMS_MONO_TRIB_VICMS, '+
+                       '0.00 as NORMAL_ICMS_MONO_TRIB_VBASE '+  // O VALOR BASE E AQUANTIDADE TRIBUTADA DO PRODUTO
+                'from NFE_ITEM '+
+                'group by 1) TMP '+
+          'group by 1; ', lConexaoOrigem.ConexaoOrigem);
         Log('Concluido ajustes');
       end;
     finally
@@ -567,7 +1113,7 @@ begin
     Exit;
   end;
   SalvarConfiguracoesOrdem;
-  pcPrincipal.ActivePage := tsPreferencias;
+  pcPrincipal.ActivePage := tsProcesso;
 end;
 
 procedure TfmMigrarBancoDados.CarregarSchemas;
@@ -577,7 +1123,7 @@ var
   lJsonOrdem: TJSONArray;
   O: Integer;
 begin
-  lArquivoOrdem := IncludeTrailingPathDelimiter(DirSchemasMigracaoTabelasConfiguracao)+'ordem.json';
+  lArquivoOrdem := IncludeTrailingPathDelimiter(DirSchemasMigracaoTabelasConfiguracao)+IfThen(cbSistema.ItemIndex = ORIGEM_MASTERVENDAS, 'mv_', 'pdv_')+'ordem.json';
   if FileExists(lArquivoOrdem) then
   begin
     lJsonOrdemString := LerArrayJsonFromFile(lArquivoOrdem);
@@ -636,6 +1182,11 @@ begin
   lJsonOrdem.Free;
 end;
 
+procedure TfmMigrarBancoDados.cbTemaSelect(Sender: TObject);
+begin
+  TStyleManager.SetStyle(cbTema.Text);
+end;
+
 function TfmMigrarBancoDados.ConexaoDestinoToJson: string;
 var
   lJson: TJSONObject;
@@ -662,6 +1213,303 @@ begin
     .AddPair('senha', edSenhaOrigem.Text);
   Result := lJson.ToJson;
   lJson.Free;
+end;
+
+procedure TfmMigrarBancoDados.CriarMovimentacao;
+begin
+  Log('Criar movimentação de estoque');
+  Log(TextProgressBar(0, 4), True);
+  MovimentaEstoqueCFe;
+  Log(TextProgressBar(1, 4), True);
+  MovimentaEstoqueNFCe;
+  Log(TextProgressBar(2, 4), True);
+  MovimentaEstoqueNFe;
+  Log(TextProgressBar(3, 4), True);
+  MovimentaEstoqueEntrada;
+  Log(TextProgressBar(4, 4), True);
+  Log('Movimentação de estoque inicial gerada');
+  InconsistenciaEstoque;
+end;
+
+procedure TfmMigrarBancoDados.ExecutarSQLDestino(ASQL: string);
+var
+  lConexaoDestino: TdmConexao;
+begin
+  lConexaoDestino := TdmConexao.Create(nil);
+  try
+    lConexaoDestino.ConectarDestino(ConexaoDestinoToJson);
+    if (lConexaoDestino.DestinoConectado) then
+    begin
+      lConexaoDestino.Execute(ASQL, lConexaoDestino.ConexaoDestino);
+    end;
+  finally
+    lConexaoDestino.Free;
+  end;
+end;
+
+function TfmMigrarBancoDados.DesfazMovimentaEstoqueCFe: boolean;
+var
+  lSQL: string;
+begin
+  lSQL :=
+    'execute block as ' +
+    'declare variable VAR_MOVIMENTO_ID int; ' +
+    'declare variable VAR_MOVIMENTO_PRODUTO_ID int; ' +
+    'declare variable VAR_MOVIMENTO_QUANTIDADE numeric(10,4); ' +
+    'begin ' +
+      'for select ID, ' +
+                 'PRODUTO_ID, ' +
+                 'QUANTIDADE ' +
+         'from MOVIMENTO_FISCAL ' +
+         'where MOVIMENTO_FINAL = 1 ' +
+         'into :VAR_MOVIMENTO_ID, :VAR_MOVIMENTO_PRODUTO_ID, :VAR_MOVIMENTO_QUANTIDADE ' +
+      'do begin ' +
+        'update MOVIMENTO_FISCAL ' +
+        'set MOVIMENTO_FINAL = 0, ' +
+            'HISTORICO = HISTORICO || '' - REGISTRO CANCELADO'' '+
+        'where ID = :VAR_MOVIMENTO_ID; ' +
+      'end ' +
+   'end ';
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+end;
+
+function TfmMigrarBancoDados.MovimentaEstoqueCFe: boolean;
+var
+  lSQL: string;
+begin
+  lSQL :=
+    'execute block as ' +
+    'declare variable VAR_ID int; ' +
+    'declare variable VAR_CFE_ID int; ' +
+    'declare variable VAR_CFE_PRODUTO_ID int; ' +
+    'declare variable VAR_CFE_QUANTIDADE numeric(10,4); ' +
+    'declare variable VAR_QUANTIDADE_ATUAL numeric(10,4); ' +
+    'begin ' +
+      'for select C.ID, ' +
+                 'C.PRODUTO_ID, ' +
+                 'C.CFE_ID, ' +
+                 'C.QUANTIDADE, ' +
+                 'E.QUANTIDADE_REAL ' +
+         'from CFE_PRODUTOS C ' +
+         'join CFE on CFE.ID = C.CFE_ID '+
+         'left join ESTOQUE E on E.PRODUTO_ID = C.PRODUTO_ID ' +
+         'where CFE.STATUS = 1 ' +
+         'into :VAR_ID, :VAR_CFE_PRODUTO_ID, :VAR_CFE_ID, :VAR_CFE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL ' +
+     'do begin ' +
+        'insert into MOVIMENTO_FISCAL (PRODUTO_ID, QUANTIDADE, QUANTIDADE_ANTERIOR, DATAMOVIMENTO, DATACADASTRO, HISTORICO, ' +
+                                      'MOVIMENTO_FINAL, MOVIMENTO_ID, ENTRADA_SAIDA_ESTOQUE, TIPO_MOVIMENTO_FIXO_ID, CFE_ID) ' +
+        'values (:VAR_CFE_PRODUTO_ID, :VAR_CFE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL, current_timestamp, current_timestamp, ''EMISSÃO DE CUPOM FISCAL'', ' +
+                '1, :VAR_ID, '+MOV_SAIDA_STR+', '+TP_MOVIMENTO_ESTOQUE_CFE.ToString+', :VAR_CFE_ID); ' +
+     'end ' +
+   'end ';
+  //DesfazMovimentaEstoqueCFe;
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+  Log('Movimentação fiscal do CF-e');
+end;
+
+function TfmMigrarBancoDados.DesfazMovimentaEstoqueNFCe: boolean;
+var
+  lSQL: string;
+begin
+  lSQL :=
+    'execute block as ' +
+    'declare variable VAR_MOVIMENTO_ID int; ' +
+    'declare variable VAR_MOVIMENTO_PRODUTO_ID int; ' +
+    'declare variable VAR_MOVIMENTO_QUANTIDADE numeric(10,4); ' +
+    'begin ' +
+      'for select ID, ' +
+                 'PRODUTO_ID, ' +
+                 'QUANTIDADE ' +
+         'from MOVIMENTO_FISCAL ' +
+         'where MOVIMENTO_FINAL = 1 ' +
+         'into :VAR_MOVIMENTO_ID, :VAR_MOVIMENTO_PRODUTO_ID, :VAR_MOVIMENTO_QUANTIDADE ' +
+      'do begin ' +
+        'update MOVIMENTO_FISCAL ' +
+        'set MOVIMENTO_FINAL = 0, ' +
+            'HISTORICO = HISTORICO || '' - REGISTRO CANCELADO'' '+
+        'where ID = :VAR_MOVIMENTO_ID; ' +
+      'end ' +
+   'end ';
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+end;
+
+function TfmMigrarBancoDados.MovimentaEstoqueNFCe: boolean;
+var
+  lSQL: string;
+begin
+  lSQL :=
+    'execute block as ' +
+    'declare variable VAR_ID int; ' +
+    'declare variable VAR_NFCE_ID int; ' +
+    'declare variable VAR_NFCE_PRODUTO_ID int; ' +
+    'declare variable VAR_NFCE_QUANTIDADE numeric(10,4); ' +
+    'declare variable VAR_QUANTIDADE_ATUAL numeric(10,4); ' +
+    'begin ' +
+      'for select C.ID, ' +
+                 'C.PRODUTO_ID, ' +
+                 'C.NFCE_ID, ' +
+                 'C.QUANTIDADE, ' +
+                 'E.QUANTIDADE_REAL ' +
+         'from NFCE_PRODUTOS C ' +
+         'join NFCE on NFCE.ID = C.NFCE_ID '+
+         'left join ESTOQUE E on E.PRODUTO_ID = C.PRODUTO_ID ' +
+         'where NFCE.STATUS = 1 ' +
+         'into :VAR_ID, :VAR_NFCE_PRODUTO_ID, :VAR_NFCE_ID, :VAR_NFCE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL ' +
+     'do begin ' +
+        'insert into MOVIMENTO_FISCAL (PRODUTO_ID, QUANTIDADE, QUANTIDADE_ANTERIOR, DATAMOVIMENTO, DATACADASTRO, HISTORICO, ' +
+                                      'MOVIMENTO_FINAL, MOVIMENTO_ID, ENTRADA_SAIDA_ESTOQUE, TIPO_MOVIMENTO_FIXO_ID, NFCE_ID) ' +
+        'values (:VAR_NFCE_PRODUTO_ID, :VAR_NFCE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL, current_timestamp, current_timestamp, ''EMISSÃO DE CUPOM FISCAL'', ' +
+                '1, :VAR_ID, '+MOV_SAIDA_STR+', '+TP_MOVIMENTO_ESTOQUE_NFCE.ToString+', :VAR_NFCE_ID); ' +
+     'end ' +
+   'end ';
+  //DesfazMovimentaEstoqueNFCe;
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+  Log('Movimentação fiscal do NFC-e');
+end;
+
+function TfmMigrarBancoDados.DesfazMovimentaEstoqueNFe: boolean;
+var
+  lSQL: string;
+begin
+  lSQL := 'execute block '+
+          'as '+
+          'declare variable VAR_MOVIMENTO_ID int; '+
+          'declare variable VAR_MOVIMENTO_PRODUTO_ID int; '+
+          'declare variable VAR_MOVIMENTO_QUANTIDADE numeric(10,4); '+
+          'declare variable VAR_ENTRADA_SAIDA_ESTOQUE int; '+
+          'begin '+
+            'for select ID, '+
+                       'PRODUTO_ID, '+
+                       'QUANTIDADE, '+
+                       'ENTRADA_SAIDA_ESTOQUE '+
+                'from MOVIMENTO_FISCAL '+
+                'where MOVIMENTO_FINAL = 1 '+
+                'into :VAR_MOVIMENTO_ID, :VAR_MOVIMENTO_PRODUTO_ID, :VAR_MOVIMENTO_QUANTIDADE, :VAR_ENTRADA_SAIDA_ESTOQUE '+
+            'do '+
+            'begin '+
+              'update MOVIMENTO_FISCAL '+
+              'set MOVIMENTO_FINAL = 0, '+
+                  'HISTORICO = HISTORICO || '' - REGISTRO DESFEITO'' '+
+              'where ID = :VAR_MOVIMENTO_ID; '+
+            'end '+
+          'end ';
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+end;
+
+function TfmMigrarBancoDados.MovimentaEstoqueNFe: boolean;
+var
+  lSQL: string;
+begin
+  lSQL := 'execute block '+
+          'as '+
+          'declare variable VAR_ID int;       '+
+          'declare variable VAR_NFE_PRODUTO_ID int;    '+
+          'declare variable VAR_NFE_PRODUTO_CFOP varchar(5);    '+
+          'declare variable VAR_CFOP_TIPO_MOVIMENTO char(1); '+
+          'declare variable VAR_NFE_ID int; '+
+          'declare variable VAR_NFE_QUANTIDADE numeric(10,4); '+
+          'declare variable VAR_QUANTIDADE_ATUAL numeric(10,4); '+
+          'begin '+
+            'for select P.ID, '+
+                       'P.PRODUTO_ID, '+
+                       'P.CFOP, '+
+                       'P.NFE_ID, '+
+                       'P.QUANTIDADE, '+
+                       'E.QUANTIDADE_REAL '+
+                'from NFE_PRODUTOS P '+
+                'join NFE on NFE.ID = P.NFE_ID '+
+                'left join ESTOQUE E on E.PRODUTO_ID = P.PRODUTO_ID '+
+                'where NFE.STATUS = 1 '+
+                'into :VAR_ID, :VAR_NFE_PRODUTO_ID, :VAR_NFE_PRODUTO_CFOP, :VAR_NFE_ID, :VAR_NFE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL '+
+            'do '+
+            'begin '+
+              'select substring(OPERACAO from 1 for 1) from CFOP where CODIGO = :VAR_NFE_PRODUTO_CFOP into :VAR_CFOP_TIPO_MOVIMENTO; '+
+              'if (VAR_CFOP_TIPO_MOVIMENTO = ''S'') then '+
+              'begin '+
+                  'insert into MOVIMENTO_FISCAL (PRODUTO_ID, QUANTIDADE, QUANTIDADE_ANTERIOR, DATAMOVIMENTO, DATACADASTRO, HISTORICO, '+
+                                                'MOVIMENTO_FINAL, MOVIMENTO_ID, ENTRADA_SAIDA_ESTOQUE, TIPO_MOVIMENTO_FIXO_ID, NFE_ID) '+
+                  'values (:VAR_NFE_PRODUTO_ID, :VAR_NFE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL, current_timestamp, current_timestamp, ''EMISSÃO DE NFE'', '+
+                          '1, :VAR_ID, '+MOV_SAIDA_STR+', '+TP_MOVIMENTO_ESTOQUE_NFE_SAIDA.ToString+', :VAR_NFE_ID); '+
+              'end '+
+              'if (VAR_CFOP_TIPO_MOVIMENTO = ''E'') then '+
+              'begin '+
+                  'insert into MOVIMENTO_FISCAL (PRODUTO_ID, QUANTIDADE, QUANTIDADE_ANTERIOR, DATAMOVIMENTO, DATACADASTRO, HISTORICO, '+
+                                                'MOVIMENTO_FINAL, MOVIMENTO_ID, ENTRADA_SAIDA_ESTOQUE, TIPO_MOVIMENTO_FIXO_ID, NFE_ID) '+
+                  'values (:VAR_NFE_PRODUTO_ID, :VAR_NFE_QUANTIDADE, :VAR_QUANTIDADE_ATUAL, current_timestamp, current_timestamp, ''EMISSÃO DE NFE'', '+
+                          '1, :VAR_ID, '+MOV_ENTRADA_STR+', '+TP_MOVIMENTO_ESTOQUE_NFE_ENTRADA.ToString+', :VAR_NFE_ID); '+
+              'end '+
+            'end '+
+          'end ';
+  //DesfazMovimentaEstoqueNFe;
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+  Log('Movimentação fiscal de NF-e');
+end;
+
+function TfmMigrarBancoDados.DesfazMovimentaEstoqueEntrada: boolean;
+var
+  lSQL: string;
+begin
+  lSQL :=
+    'execute block as ' +
+    'declare variable VAR_MOVIMENTO_ID int; ' +
+    'declare variable VAR_MOVIMENTO_PRODUTO_ID int; ' +
+    'declare variable VAR_MOVIMENTO_QUANTIDADE numeric(10,4); ' +
+    'begin ' +
+      'for select ID, ' +
+                 'PRODUTO_ID, ' +
+                 'QUANTIDADE ' +
+         'from MOVIMENTO_FISCAL ' +
+         'where MOVIMENTO_FINAL = 1 ' +
+         'into :VAR_MOVIMENTO_ID, :VAR_MOVIMENTO_PRODUTO_ID, :VAR_MOVIMENTO_QUANTIDADE ' +
+      'do begin ' +
+        'update MOVIMENTO_FISCAL ' +
+        'set MOVIMENTO_FINAL = 0, ' +
+            'HISTORICO = HISTORICO || '' - REGISTRO CANCELADO ('' || ENTRADA_NOTA_ID || '')'', '+
+            'ENTRADA_NOTA_ID = null '+
+        'where ID = :VAR_MOVIMENTO_ID; ' +
+      'end ' +
+   'end ';
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+end;
+
+function TfmMigrarBancoDados.MovimentaEstoqueEntrada: boolean;
+var
+  lSQL: string;
+begin
+  lSQL :=
+    'execute block as ' +
+    'declare variable VAR_ID int; ' +
+    'declare variable VAR_ENTRADA_ID int; ' +
+    'declare variable VAR_ENTRADA_PRODUTO_ID int; ' +
+    'declare variable VAR_ENTRADA_QUANTIDADE numeric(10,4); ' +
+    'declare variable VAR_QUANTIDADE_ATUAL numeric(10,4); ' +
+    'begin ' +
+      'for select P.ID, ' +
+                 'P.PRODUTO_ID, ' +
+                 'P.NOTA_ENTRADA_ID, ' +
+                 'P.QUANTIDADE_ENTRA, ' +
+                 'E.QUANTIDADE_REAL ' +
+         'from PRODUTOS_ENTRADAS P ' +
+         'left join ESTOQUE E on E.PRODUTO_ID = P.PRODUTO_ID ' +
+         'into :VAR_ID, :VAR_ENTRADA_PRODUTO_ID, :VAR_ENTRADA_ID, :VAR_ENTRADA_QUANTIDADE, :VAR_QUANTIDADE_ATUAL ' +
+     'do begin ' +
+        'insert into MOVIMENTO_FISCAL (PRODUTO_ID, QUANTIDADE, QUANTIDADE_ANTERIOR, DATAMOVIMENTO, DATACADASTRO, HISTORICO, ' +
+                                      'MOVIMENTO_FINAL, MOVIMENTO_ID, ENTRADA_SAIDA_ESTOQUE, TIPO_MOVIMENTO_FIXO_ID, ENTRADA_NOTA_ID) ' +
+        'values (:VAR_ENTRADA_PRODUTO_ID, :VAR_ENTRADA_QUANTIDADE, :VAR_QUANTIDADE_ATUAL, current_timestamp, current_timestamp, ''ENTRADA DE NOTA FISCAL'', ' +
+                '1, :VAR_ID, '+MOV_ENTRADA_STR+', '+TP_MOVIMENTO_ESTOQUE_ENTRADA.ToString+', :VAR_ENTRADA_ID); ' +
+     'end ' +
+   'end ';
+  //DesfazMovimentaEstoqueEntrada;
+  ExecutarSQLDestino(lSQL);
+  Result := True;
+  Log('Movimentação fiscal de Entrada de Nota');
 end;
 
 end.

@@ -1,6 +1,6 @@
 object fmrMainPlugin: TfmrMainPlugin
-  Left = 0
-  Top = 0
+  Left = 694
+  Top = 491
   Caption = 'Plugin Up2'
   ClientHeight = 116
   ClientWidth = 591
@@ -10,10 +10,8 @@ object fmrMainPlugin: TfmrMainPlugin
   Font.Height = -15
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
-  PixelsPerInch = 96
   TextHeight = 18
   object btnServicos: TcxButton
     Left = 17

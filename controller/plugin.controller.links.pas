@@ -53,6 +53,9 @@ type
     FJoins: TObjectList<TPluginLinkJoin>;
     FChavesAuxiliares: TJSONArray;
     FTipoComando: string;
+    FNomeArquivo: string;
+    FTipoExecucao: string;
+    FTipoExecucaoSQL: string;
     function MontaSelect(AIgnoraWhere: boolean = false): string;
     function MontaInsert: string;
     function MontaInsertMigracao(AContinuarSequencia: boolean = False): string;
@@ -67,6 +70,9 @@ type
     property WhereSelect: string read FWhereSelect write FWhereSelect;
     property WhereAdicional: string read FWhereAdicional write FWhereAdicional;
     property TipoComando: string read FTipoComando write FTipoComando;
+    property NomeArquivo: string read FNomeArquivo write FNomeArquivo;
+    property TipoExecucao: string read FTipoExecucao write FTipoExecucao;
+    property TipoExecucaoSQL: string read FTipoExecucaoSQL write FTipoExecucaoSQL;
     function AddLinkFields(ATabelaOrigem, ACampoOrigem, ATipoOrigem, ACampoDestino, ATipoDestino,
       AValorPadrao, APermiteNulo, AMascaraConversao: string; ATamanhoMaximo: integer;
       AChavePrimaria: boolean): boolean;
@@ -89,8 +95,14 @@ type
     class function Novo(AJson: string): TPluginLink; overload;
     function GetJoins: TObjectList<TPluginLinkJoin>;
     function SchemaInsert: boolean;
+    function SchemaExecucaoGrupo: boolean;
+    function SchemaExecucaoIncremental: boolean;
     procedure SetSchemaInsert;
     procedure SetSchemaUpdate;
+    procedure SetExecucaoIndividual;
+    procedure SetExecucaoEmGrupo;
+    procedure SetExecucaoIncremental;
+    procedure SetExecucaoPadrao;
   end;
 
 implementation
@@ -211,6 +223,8 @@ begin
   FJoins := TObjectList<TPluginLinkJoin>.Create;
   FChavesAuxiliares := TJSONArray.Create;
   FTipoComando := 'insert';
+  FTipoExecucao := 'grupo';
+  FTipoExecucaoSQL := 'padrao';
 end;
 
 destructor TPluginLink.Destroy;
@@ -341,6 +355,8 @@ begin
   Self.WhereSelect := LerJson(AJson, 'where');
   Self.WhereAdicional := LerJson(AJson, 'whereadicional');
   Self.TipoComando := LerJson(AJson, 'comando', 'insert');
+  Self.TipoExecucao := LerJson(AJson, 'execucao', 'grupo');
+  Self.TipoExecucaoSQL := LerJson(AJson, 'execucaosql', 'padrao');
   FreeAndNil(FJoins);
   FJoins := TObjectList<TPluginLinkJoin>.Create;
   FreeAndNil(FLinks);
@@ -424,17 +440,9 @@ begin
         lMascaraCampoOrigem := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_PRE_TRECHO);
         lMascaraTabela := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_TRECHO);
         lMarcaraCampoDestino := ExtrairTextoAPartirDePosicao(ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_POS_TRECHO), '-', EXTRAIR_POS_TRECHO);
-        for O := 0 to FChavesAuxiliares.Count - 1 do
-        begin
-          if (FChavesAuxiliares.Items[O].GetValue<string>('tabela', '') = lMascaraTabela) and
-             (FChavesAuxiliares.Items[O].GetValue<string>('key', '') = lMarcaraCampoDestino) then
-          begin
-            lTextoSelectField := Format('(select first 1 %s from %s where %s = %s)', [lMarcaraCampoDestino,
-                                                                                      lMascaraTabela,
-                                                                                      FChavesAuxiliares.Items[O].GetValue<string>('key_aux', ''),
-                                                                                      FLinks[I].MontaInsert(1)]);
-          end;
-        end;
+        lTextoSelectField := Format('(select first 1 ID from %s where %s = %s)', [lMascaraTabela,
+                                                                                  lMarcaraCampoDestino,
+                                                                                  FLinks[I].MontaInsert(1)]);
       end;
 
       lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + FLinks[I].MontaInsert(0);
@@ -565,6 +573,8 @@ begin
     vJsonResposta.AddPair('where', FWhereSelect);
     vJsonResposta.AddPair('whereadicional', FWhereAdicional);
     vJsonResposta.AddPair('comando', FTipoComando);
+    vJsonResposta.AddPair('execucao', FTipoExecucao);
+    vJsonResposta.AddPair('execucaosql', FTipoExecucaoSQL);
     vJsonJoins := TJSONArray.Create;
     for I := 0 to FJoins.Count - 1 do
     begin
@@ -598,9 +608,39 @@ begin
   Result := True;
 end;
 
+function TPluginLink.SchemaExecucaoGrupo: boolean;
+begin
+  Result := FTipoExecucao = 'grupo';
+end;
+
+function TPluginLink.SchemaExecucaoIncremental: boolean;
+begin
+  Result := FTipoExecucaoSQL = 'incremental';
+end;
+
 function TPluginLink.SchemaInsert: boolean;
 begin
   Result := FTipoComando = 'insert';
+end;
+
+procedure TPluginLink.SetExecucaoEmGrupo;
+begin
+  FTipoExecucao := 'grupo';
+end;
+
+procedure TPluginLink.SetExecucaoIndividual;
+begin
+  FTipoExecucao := 'individual';
+end;
+
+procedure TPluginLink.SetExecucaoIncremental;
+begin
+  FTipoExecucaoSQL := 'incremental';
+end;
+
+procedure TPluginLink.SetExecucaoPadrao;
+begin
+  FTipoExecucaoSQL := 'padrao';
 end;
 
 procedure TPluginLink.SetSchemaInsert;

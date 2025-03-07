@@ -4,13 +4,14 @@ interface
 
 uses
   Inifiles, System.SysUtils, System.JSON, System.Classes, System.DateUtils,
-  {$IF DEFINED(MSWINDOWS)} Vcl.Forms, Winapi.Windows,{$ENDIF} System.StrUtils, System.Math;
+  {$IF DEFINED(MSWINDOWS)} Vcl.Forms, Winapi.Windows, Vcl.Dialogs,{$ENDIF} System.StrUtils, System.Math;
 
   //Manipulação de arquivos
   procedure GravarIni(ASecao, AIdent, AValor, AIniFile: string);
   function LerIni(ASecao, AIdent, AValorDefault, AIniFile: string): string;
   procedure GravaLog(ALog, AFileName: string);
   function LerTextFromFile(AFile: string): string;
+  function GravaTextToFile(AFile, AContent: string): Boolean;
   procedure CriarPastasPadronizadas;
   function DirLocal: string;
   function DirBancoDeDados: string;
@@ -22,6 +23,7 @@ uses
   function DirConsultas: string;
   function DirConsultasPendentes: string;
   function DirConsultasHistorico: string;
+  function ExtractName(const Filename: String): String;
 
   //Manipulação de JSON
   function LerJson(aJson, aIdent: string; ADefault: string = ''): string;  //Retorna um valor de um parametro de json
@@ -38,6 +40,7 @@ uses
   //Tradução de constantes
   function LogTypeToString(AType: integer): string;
   function DateToSQLDateTime(aDateTime: TDateTime; aTipo: integer = 0; aPosicao: integer = 0): string;
+  function FloatToSQLFloat(Valor: Currency): string;
 
   //Calculos matematicos
   function CalculaOValorEquivalenteAPorcentagemSobreValor(aPercent, aValue: double): double;
@@ -154,6 +157,34 @@ begin
   end;
 end;
 
+function GravaTextToFile(AFile, AContent: string): Boolean;
+var
+  arq: TextFile;
+  linhas: TStringList;
+  i: Integer;
+begin
+  Result := False; // Inicializa como falso
+  linhas := TStringList.Create;
+  try
+    linhas.Text := AContent; // Converte o conteúdo em linhas
+    AssignFile(arq, AFile);
+    {$I-}
+    Rewrite(arq);  // Abre o arquivo para escrita
+    {$I+}
+    if IOResult <> 0 then
+      Exit;
+
+    // Escreve cada linha separadamente no arquivo
+    for i := 0 to linhas.Count - 1 do
+      Writeln(arq, linhas[i]);
+
+    Result := True; // Gravação bem-sucedida
+  finally
+    CloseFile(arq);
+    linhas.Free;
+  end;
+end;
+
 procedure CriarPastasPadronizadas;
 begin
   if not (DirectoryExists(DirBancoDeDados)) then
@@ -235,6 +266,22 @@ begin
   Result := IncludeTrailingPathDelimiter(IncludeTrailingPathDelimiter(DirConsultas)+'historico')+FormatDateTime('ddmmyyyy', Date);
   if not (DirectoryExists(Result)) then
     ForceDirectories(Result);
+end;
+
+function ExtractName(const Filename: String): String;
+{Retorna o nome do Arquivo sem extensão}
+var
+  aExt : String;
+  aPos : Integer;
+begin
+  aExt := ExtractFileExt(Filename);
+  Result := ExtractFileName(Filename);
+  if aExt <> '' then
+  begin
+    aPos := Pos(aExt,Result);
+    if aPos > 0 then
+      Delete(Result,aPos,Length(aExt));
+  end;
 end;
 
 function LerJson(aJson, aIdent: string; ADefault: string = ''): string;
@@ -451,6 +498,19 @@ begin
   Result := QuotedStr(Result);
 end;
 
+function FloatToSQLFloat(Valor: Currency): string;
+var i: integer;
+  aValor: String;
+begin
+  aValor := FloatToStr(Valor);
+  for i := 0 to Length(aValor) do
+  begin
+    if aValor[i] = ',' then
+      aValor[i] := '.';
+  end;
+  Result := aValor;
+end;
+
 function CalculaOValorEquivalenteAPorcentagemSobreValor(aPercent,
   aValue: double): double;
 begin
@@ -529,8 +589,9 @@ end;
 function ShowQuestion(const aMsg: string; aTitulo:String = 'Importante'; aPreSelect: integer = 0): boolean;
 begin
   {$IF DEFINED(MSWINDOWS)}
-  Result := (Application.MessageBox(PWideChar(aMsg), PWideChar(aTitulo),
-    MB_ICONQUESTION + MB_YESNO + IfThen(aPreSelect = 0, MB_DEFBUTTON2, MB_DEFBUTTON1)) = IDYES);
+  //Result := (Application.MessageBox(PWideChar(aMsg), PWideChar(aTitulo),
+  //  MB_ICONQUESTION + MB_YESNO + IfThen(aPreSelect = 0, MB_DEFBUTTON2, MB_DEFBUTTON1)) = IDYES);
+  Result := MessageDlg(aMsg, mtConfirmation, [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], 0) = IDYES;
   {$ENDIF}
 end;
 
@@ -550,7 +611,13 @@ begin
     begin
       case aDirecao of
         EXTRAIR_PRE_TRECHO: Result := copy(aTexto, 1, pos(aTrecho, aTexto)-1);
-        EXTRAIR_TRECHO: Result := copy(aTexto, 1, pos(aTrecho, aTexto)) + copy(aTexto, pos(aTrecho, aTexto)+Length(aTrecho), Length(aTexto));
+        EXTRAIR_TRECHO:
+        begin
+          var StartPos := pos(aTrecho, aTexto) + Length(aTrecho);
+          var EndPos := pos(aTrecho, aTexto, StartPos);
+          if EndPos > 0 then
+            Result := copy(aTexto, StartPos, EndPos - StartPos);
+        end;
         EXTRAIR_POS_TRECHO: Result := copy(aTexto, pos(aTrecho, aTexto)+Length(aTrecho), Length(aTexto));
       end;
     end;

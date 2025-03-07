@@ -2,40 +2,36 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
   Left = 0
   Top = 0
   Caption = 'Migrar banco de dados'
-  ClientHeight = 557
-  ClientWidth = 986
+  ClientHeight = 556
+  ClientWidth = 1104
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 16
   object pcPrincipal: TPageControl
     Left = 0
     Top = 0
-    Width = 986
-    Height = 557
+    Width = 1104
+    Height = 556
     ActivePage = tsProcesso
     Align = alClient
     TabOrder = 0
+    ExplicitWidth = 1098
+    ExplicitHeight = 547
     object tsBancos: TTabSheet
       Caption = 'tsBancos'
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Panel1: TPanel
         Left = 0
-        Top = 493
-        Width = 978
+        Top = 492
+        Width = 1096
         Height = 54
         Align = alBottom
         TabOrder = 0
@@ -55,13 +51,13 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
       object Panel2: TPanel
         Left = 0
         Top = 0
-        Width = 978
-        Height = 493
+        Width = 1096
+        Height = 492
         Align = alClient
         TabOrder = 1
         object GroupBox1: TGroupBox
-          Left = 16
-          Top = 16
+          Left = 24
+          Top = 23
           Width = 393
           Height = 345
           Caption = 'Banco de Origem'
@@ -107,6 +103,48 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
             Width = 46
             Height = 16
             Caption = 'Sistema'
+          end
+          object SpeedButton1: TSpeedButton
+            Left = 352
+            Top = 200
+            Width = 23
+            Height = 22
+            Glyph.Data = {
+              36040000424D3604000000000000360000002800000010000000100000000100
+              2000000000000004000000000000000000000000000000000000000000000000
+              0000000000000000000000000000000000000000000000000000000000000000
+              000000000000000000020000000E0B14308329448DFB1D2F58A5000000000000
+              0000000000000000000000000000000000000000000000000000000000000000
+              0000000000020000000E0D1937883C6DB2FF5BB1F9FF325196F4000000000000
+              00000000000100000004000000090000000D0000000F0000000F0000000C0000
+              00070000000E0F1D3C864A7CBCFF73C4FFFF467CC3FF17254485000000000000
+              0002000000081C130F465A3B31BC7C5043F87F5244FF7B4E42FA57382FC11E14
+              1059112142875686C2FF88D0FFFF5186C7FF142343880000000F000000010302
+              02104A332C91946B5DFDC6ACA1FFE4D1C6FFEDDDD2FFE2D0C5FFC0A599FF855C
+              50FF6E6B7EFF98D4F8FF5B8ECBFF152545840000000D00000002000000076046
+              3DA6B39288FFE9DAD0FFDAC0A1FFCBA87AFFC49B66FFCCAA7EFFDCC2A5FFE5D2
+              C6FF9A766AFF736A77FF162747850000000E00000002000000002A201D4AAE88
+              7CFFEFE6DFFFCDA67CFFCDA26BFFE3C28CFFEDD5A2FFE7CD9EFFD3B182FFD0AE
+              88FFE7D5CAFF885F53FF25181464000000070000000000000000755B53ACDFCE
+              C9FFDDC1A8FFC99865FFE8BE83FFE9C388FFEDCA97FFEFD3A7FFF2D9B0FFD5B1
+              87FFDBBEA6FFC5ACA2FF5A3D33C10000000C0000000000000000A9877CE9F8F4
+              F2FFC79873FFDEAB77FFEFCDABFFF0D0B1FFEDC9A1FFECC69AFFEFCFA9FFE9C9
+              A4FFC89B77FFE6D6CEFF7C5448F10000000F0000000000000000C09C90FFFDFD
+              FCFFBE875FFFEDCFB9FFF5DFD2FFF2D6C1FFF1CFB4FFEDC6A4FFECC19BFFEFC8
+              A6FFC08B67FFF1E6DFFF8B6154FF0000000F0000000000000000AF9186E6F9F5
+              F4FFC69474FFE8CDC3FFF9E8E4FFF6DED2FFF3D4C2FFF0CBB2FFEBB78EFFE5B7
+              92FFC59172FFEBDFD9FF866055EE0000000D0000000000000000876F68B0E7D9
+              D4FFE2C6B7FFC89072FFFAEFF2FFF9E7E4FFF6DDD3FFF1C8B2FFEBAF88FFC98E
+              6CFFDCBBAAFFD3C0B7FF6B4F46BC00000009000000000000000026201E36CCAF
+              A7FAFBF8F7FFCF9F88FFC78E72FFE9CDC6FFEDC7B5FFDD9F79FFC88865FFCE9D
+              84FFF5EFEBFFB39387FF2A201D52000000040000000000000000000000036454
+              4F84D9C2BAFFFDFBFAFFE2C6B8FFCB977EFFC08163FFCB977DFFE0C4B4FFFAF6
+              F5FFC9B0A7FF6B564EA700000009000000010000000000000000000000000202
+              020762534D81CEB2A9FAEADDD8FFF9F5F4FFFFFFFFFFF9F5F4FFE9DCD7FFC8AC
+              A2FC62504B900404031000000002000000000000000000000000000000000000
+              000000000003241F1D3486726BADB69B91E6CCADA1FFB99C92E988736CB22822
+              1F3E000000060000000100000000000000000000000000000000}
+            OnClick = SpeedButton1Click
           end
           object btnTestarBancoDados: TButton
             Left = 142
@@ -163,6 +201,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
             Width = 145
             Height = 24
             Style = csDropDownList
+            Enabled = False
             ItemIndex = 1
             TabOrder = 6
             Text = 'Up2 PDV'
@@ -233,6 +272,48 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
             Font.Style = [fsBold]
             ParentFont = False
           end
+          object SpeedButton2: TSpeedButton
+            Left = 351
+            Top = 200
+            Width = 23
+            Height = 22
+            Glyph.Data = {
+              36040000424D3604000000000000360000002800000010000000100000000100
+              2000000000000004000000000000000000000000000000000000000000000000
+              0000000000000000000000000000000000000000000000000000000000000000
+              000000000000000000020000000E0B14308329448DFB1D2F58A5000000000000
+              0000000000000000000000000000000000000000000000000000000000000000
+              0000000000020000000E0D1937883C6DB2FF5BB1F9FF325196F4000000000000
+              00000000000100000004000000090000000D0000000F0000000F0000000C0000
+              00070000000E0F1D3C864A7CBCFF73C4FFFF467CC3FF17254485000000000000
+              0002000000081C130F465A3B31BC7C5043F87F5244FF7B4E42FA57382FC11E14
+              1059112142875686C2FF88D0FFFF5186C7FF142343880000000F000000010302
+              02104A332C91946B5DFDC6ACA1FFE4D1C6FFEDDDD2FFE2D0C5FFC0A599FF855C
+              50FF6E6B7EFF98D4F8FF5B8ECBFF152545840000000D00000002000000076046
+              3DA6B39288FFE9DAD0FFDAC0A1FFCBA87AFFC49B66FFCCAA7EFFDCC2A5FFE5D2
+              C6FF9A766AFF736A77FF162747850000000E00000002000000002A201D4AAE88
+              7CFFEFE6DFFFCDA67CFFCDA26BFFE3C28CFFEDD5A2FFE7CD9EFFD3B182FFD0AE
+              88FFE7D5CAFF885F53FF25181464000000070000000000000000755B53ACDFCE
+              C9FFDDC1A8FFC99865FFE8BE83FFE9C388FFEDCA97FFEFD3A7FFF2D9B0FFD5B1
+              87FFDBBEA6FFC5ACA2FF5A3D33C10000000C0000000000000000A9877CE9F8F4
+              F2FFC79873FFDEAB77FFEFCDABFFF0D0B1FFEDC9A1FFECC69AFFEFCFA9FFE9C9
+              A4FFC89B77FFE6D6CEFF7C5448F10000000F0000000000000000C09C90FFFDFD
+              FCFFBE875FFFEDCFB9FFF5DFD2FFF2D6C1FFF1CFB4FFEDC6A4FFECC19BFFEFC8
+              A6FFC08B67FFF1E6DFFF8B6154FF0000000F0000000000000000AF9186E6F9F5
+              F4FFC69474FFE8CDC3FFF9E8E4FFF6DED2FFF3D4C2FFF0CBB2FFEBB78EFFE5B7
+              92FFC59172FFEBDFD9FF866055EE0000000D0000000000000000876F68B0E7D9
+              D4FFE2C6B7FFC89072FFFAEFF2FFF9E7E4FFF6DDD3FFF1C8B2FFEBAF88FFC98E
+              6CFFDCBBAAFFD3C0B7FF6B4F46BC00000009000000000000000026201E36CCAF
+              A7FAFBF8F7FFCF9F88FFC78E72FFE9CDC6FFEDC7B5FFDD9F79FFC88865FFCE9D
+              84FFF5EFEBFFB39387FF2A201D52000000040000000000000000000000036454
+              4F84D9C2BAFFFDFBFAFFE2C6B8FFCB977EFFC08163FFCB977DFFE0C4B4FFFAF6
+              F5FFC9B0A7FF6B564EA700000009000000010000000000000000000000000202
+              020762534D81CEB2A9FAEADDD8FFF9F5F4FFFFFFFFFFF9F5F4FFE9DCD7FFC8AC
+              A2FC62504B900404031000000002000000000000000000000000000000000000
+              000000000003241F1D3486726BADB69B91E6CCADA1FFB99C92E988736CB22822
+              1F3E000000060000000100000000000000000000000000000000}
+            OnClick = SpeedButton2Click
+          end
           object btnTestarConexaoDadosDestino: TButton
             Left = 141
             Top = 294
@@ -283,29 +364,47 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
             Text = 'masterkey'
           end
         end
+        object cbTema: TComboBox
+          Left = 16
+          Top = 374
+          Width = 297
+          Height = 24
+          Style = csDropDownList
+          ItemIndex = 0
+          TabOrder = 2
+          Text = 'Windows'
+          OnSelect = cbTemaSelect
+          Items.Strings = (
+            'Windows'
+            'Amethyst Kamri'
+            'Cyan Dusk'
+            'Iceberg Classico'
+            'Luna'
+            'Windows'
+            'Glossy'
+            'Windows10'
+            'Windows10 Dark'
+            'Windows10 SlateGray')
+        end
       end
     end
     object tsLista: TTabSheet
       Caption = 'tsLista'
       ImageIndex = 1
       TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Panel5: TPanel
         Left = 0
         Top = 0
-        Width = 978
-        Height = 493
+        Width = 1096
+        Height = 492
         Align = alClient
         TabOrder = 0
         object grBancoDados: TDBGrid
           AlignWithMargins = True
           Left = 52
           Top = 4
-          Width = 922
-          Height = 485
+          Width = 1040
+          Height = 484
           Align = alClient
           BorderStyle = bsNone
           DataSource = dsSchemas
@@ -324,7 +423,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           Left = 1
           Top = 1
           Width = 48
-          Height = 491
+          Height = 490
           Align = alLeft
           TabOrder = 1
           object btnMoveUp: TcxButton
@@ -391,6 +490,8 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
             Width = 40
             Height = 45
             Align = alTop
+            LookAndFeel.Kind = lfUltraFlat
+            LookAndFeel.NativeStyle = True
             OptionsImage.Glyph.SourceDPI = 96
             OptionsImage.Glyph.Data = {
               89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
@@ -445,8 +546,8 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
       end
       object Panel6: TPanel
         Left = 0
-        Top = 493
-        Width = 978
+        Top = 492
+        Width = 1096
         Height = 54
         Align = alBottom
         TabOrder = 1
@@ -459,8 +560,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           Margins.Left = 10
           Margins.Right = 10
           Align = alLeft
-          ExplicitLeft = 274
-          ExplicitTop = 2
+          ExplicitLeft = 282
         end
         object btnProximaLista: TButton
           AlignWithMargins = True
@@ -527,78 +627,19 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
         end
       end
     end
-    object tsPreferencias: TTabSheet
-      Caption = 'Preferencias'
-      ImageIndex = 3
-      TabVisible = False
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
-      object Panel8: TPanel
-        Left = 0
-        Top = 493
-        Width = 978
-        Height = 54
-        Align = alBottom
-        TabOrder = 0
-        object btnVoltarPreferencias: TButton
-          AlignWithMargins = True
-          Left = 4
-          Top = 4
-          Width = 128
-          Height = 46
-          Margins.Right = 4
-          Align = alLeft
-          Caption = 'Voltar'
-          TabOrder = 0
-          OnClick = btnVoltarPreferenciasClick
-        end
-        object btnProximoPreferencias: TButton
-          AlignWithMargins = True
-          Left = 140
-          Top = 4
-          Width = 128
-          Height = 46
-          Margins.Left = 4
-          Align = alLeft
-          Caption = 'Pr'#243'ximo'
-          TabOrder = 1
-          OnClick = btnProximoPreferenciasClick
-        end
-      end
-      object chkContinuarSequencia: TCheckBox
-        Left = 16
-        Top = 16
-        Width = 529
-        Height = 17
-        Caption = 'Continuar sequ'#234'ncia de cadastros j'#225' existentes'
-        TabOrder = 1
-      end
-      object Memo1: TMemo
-        Left = 16
-        Top = 39
-        Width = 441
-        Height = 50
-        Lines.Strings = (
-          
-            'Ignora o c'#243'digo dos registros atuais e adiciona os registros nov' +
-            'os '
-          'seguindo a sequ'#234'ncia dos cadastros j'#225' feitos')
-        TabOrder = 2
-      end
-    end
     object tsProcesso: TTabSheet
       Caption = 'tsProcesso'
       ImageIndex = 2
       TabVisible = False
       object Panel3: TPanel
         Left = 0
-        Top = 493
-        Width = 978
+        Top = 492
+        Width = 1096
         Height = 54
         Align = alBottom
         TabOrder = 0
+        ExplicitTop = 483
+        ExplicitWidth = 1090
         object Shape2: TShape
           AlignWithMargins = True
           Left = 281
@@ -608,9 +649,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           Margins.Left = 10
           Margins.Right = 10
           Align = alLeft
-          ExplicitLeft = 271
-          ExplicitTop = 1
-          ExplicitHeight = 52
+          ExplicitLeft = 282
         end
         object btnVoltarProcesso: TButton
           AlignWithMargins = True
@@ -622,7 +661,6 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           Align = alLeft
           Caption = 'Voltar'
           TabOrder = 0
-          OnClick = btnVoltarProcessoClick
         end
         object btnIniciarProcesso: TButton
           AlignWithMargins = True
@@ -649,40 +687,295 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           WordWrap = True
           OnClick = btnPrepararBancoOrigemClick
         end
+        object btnPrepararBancoDestino: TButton
+          AlignWithMargins = True
+          Left = 431
+          Top = 4
+          Width = 128
+          Height = 46
+          Margins.Left = 4
+          Align = alLeft
+          Caption = 'Preparar banco MV FISCAL'
+          TabOrder = 3
+          WordWrap = True
+          OnClick = btnPrepararBancoDestinoClick
+        end
       end
       object Panel4: TPanel
         Left = 0
         Top = 0
-        Width = 978
-        Height = 493
+        Width = 1096
+        Height = 492
         Align = alClient
         TabOrder = 1
+        ExplicitWidth = 1090
+        ExplicitHeight = 483
         object Label12: TLabel
           AlignWithMargins = True
           Left = 4
           Top = 4
-          Width = 970
+          Width = 1088
           Height = 16
           Align = alTop
           Caption = 'Log'
           ExplicitWidth = 20
         end
+        object lbProcessamento: TLabel
+          AlignWithMargins = True
+          Left = 4
+          Top = 472
+          Width = 1088
+          Height = 16
+          Align = alBottom
+          Caption = '[ | ]'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -16
+          Font.Name = 'Courier'
+          Font.Style = [fsBold]
+          ParentFont = False
+          ExplicitWidth = 51
+        end
         object mmLogProcesso: TMemo
           AlignWithMargins = True
           Left = 4
           Top = 26
-          Width = 970
-          Height = 463
+          Width = 1088
+          Height = 440
           Align = alClient
-          Color = clBlack
           Font.Charset = DEFAULT_CHARSET
-          Font.Color = clWhite
+          Font.Color = clWindowText
           Font.Height = -13
           Font.Name = 'Courier'
-          Font.Style = []
+          Font.Style = [fsBold]
           ParentFont = False
+          ReadOnly = True
           TabOrder = 0
+          ExplicitWidth = 1082
+          ExplicitHeight = 431
         end
+      end
+    end
+    object tsSQLs: TTabSheet
+      Caption = 'tsSQLs'
+      ImageIndex = 4
+      TabVisible = False
+      object mmSQLSequencia: TMemo
+        Left = 3
+        Top = 3
+        Width = 972
+        Height = 182
+        Lines.Strings = (
+          'execute block'
+          'as'
+          'declare variable VMAXID integer;'
+          'begin'
+          '  select coalesce(max(ID), 0) from CAIXAS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CAIXAS_ID_SEQ RESTART WITH '#39 +
+            ' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from CAIXA_TIPOS_MOVIMENTOS into :' +
+            'VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CAIXA_TIPOS_MOVIMENTOS_ID_SE' +
+            'Q RESTART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from CLIENTES into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CLIENTES_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from CONTA_PR where TIPO = 1 into ' +
+            ':VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CONTA_RECEBER_SEQ RESTART WI' +
+            'TH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from CONTA_PR where TIPO = 2 into ' +
+            ':VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CONTA_PAGAR_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from EQUIPAMENTOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE EQUIPAMENTOS_ID_SEQ RESTART ' +
+            'WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from ESTOQUE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE ESTOQUE_ID_SEQ RESTART WITH ' +
+            #39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from FILIAIS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE FILIAIS_ID_SEQ RESTART WITH ' +
+            #39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from FORNECEDORES into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE FORNECEDORES_ID_SEQ RESTART ' +
+            'WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from GRUPOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE GRUPOS_ID_SEQ RESTART WITH '#39 +
+            ' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from GRUPOSCLIENTE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE GRUPOSCLIENTE_ID_SEQ RESTART' +
+            ' WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from MARCAS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MARCAS_ID_SEQ RESTART WITH '#39 +
+            ' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from PARCELAS_PRAZOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE PARCELAS_PRAZOS_ID_SEQ RESTA' +
+            'RT WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from PERFIL into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE PERFIL_ID_SEQ RESTART WITH '#39 +
+            ' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from PRODUTOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE PRODUTOS_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from PERFIL_IMPORTACAO into :VMAXI' +
+            'D;'
+          
+            '  execute statement('#39'ALTER SEQUENCE PERFIL_IMPORTACAO_ID_SEQ RES' +
+            'TART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from PRAZOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE PRAZOS_ID_SEQ RESTART WITH '#39 +
+            ' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from PRODUTOS_FORNECEDORES into :V' +
+            'MAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE PRODUTOS_FORNECEDORES_ID_SEQ' +
+            ' RESTART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from REGRASTRIBUTACAO into :VMAXID' +
+            ';'
+          
+            '  execute statement('#39'ALTER SEQUENCE REGRASTRIBUTACAO_ID_SEQ REST' +
+            'ART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from SERVICOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE SERVICOS_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from SUBGRUPOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE SUBGRUPO_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from TECNICOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE TECNICOS_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from TIPOS_DOCUMENTOS into :VMAXID' +
+            ';'
+          
+            '  execute statement('#39'ALTER SEQUENCE TIPOS_DOCUMENTOS_ID_SEQ REST' +
+            'ART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from TIPOS_PAGAMENTOS into :VMAXID' +
+            ';'
+          
+            '  execute statement('#39'ALTER SEQUENCE TIPOS_PAGAMENTOS_ID_SEQ REST' +
+            'ART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from TIPO_ESTOQUE_MOV into :VMAXID' +
+            ';'
+          
+            '  execute statement('#39'ALTER SEQUENCE TIPO_ESTOQUE_MOV_ID_SEQ REST' +
+            'ART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from USUARIOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE USUARIOS_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from VENDEDORES into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE VENDEDORES_SEQ RESTART WITH ' +
+            #39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from CFE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CFE_ID_SEQ RESTART WITH '#39' ||' +
+            ' cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from CFE_PAGAMENTOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CFE_PAGAMENTOS_ID_SEQ RESTAR' +
+            'T WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from CFE_PRODUTOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE CFE_PRODUTOS_ID_SEQ RESTART ' +
+            'WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from CONDUTORES into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE GEN_CONDUTORES_ID RESTART WI' +
+            'TH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from MDFE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_ID_SEQ RESTART WITH '#39' |' +
+            '| cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from MDFE_CONDUTORES into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_CONDUTORES_ID_SEQ RESTA' +
+            'RT WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from MDFE_EVENTO into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_EVENTO_ID_SEQ RESTART W' +
+            'ITH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from MDFE_LOCAL_CARREGAMENTO into ' +
+            ':VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_LOCAL_CARREGAMENTO_ID_S' +
+            'EQ RESTART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from MDFE_LOCAL_DESCARREGAMENTO in' +
+            'to :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_LOCAL_DESCGNTO_ID_SEQ R' +
+            'ESTART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from MDFE_NFE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_NFE_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from MDFE_REBOQUE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_REBOQUE_ID_SEQ RESTART ' +
+            'WITH '#39' || cast(:VMAXID as varchar(16)));'
+          
+            '  select coalesce(max(ID), 0) from MDFE_UF_PERCURSO into :VMAXID' +
+            ';'
+          
+            '  execute statement('#39'ALTER SEQUENCE MDFE_UF_PERCURSO_ID_SEQ REST' +
+            'ART WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from NFCE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE NFCE_ID_SEQ RESTART WITH '#39' |' +
+            '| cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from NFCE_PAGAMENTOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE NFCE_PAGAMENTOS_ID_SEQ RESTA' +
+            'RT WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from NFCE_PRODUTOS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE NFCE_PRODUTOS_ID_SEQ RESTART' +
+            ' WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from NFE into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE NFE_ID_SEQ RESTART WITH '#39' ||' +
+            ' cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from NOTAS_ENTRADAS into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE NOTAS_ENTRADAS_ID_SEQ RESTAR' +
+            'T WITH '#39' || cast(:VMAXID as varchar(16)));'
+          '  select coalesce(max(ID), 0) from REBOQUES into :VMAXID;'
+          
+            '  execute statement('#39'ALTER SEQUENCE REBOQUES_ID_SEQ RESTART WITH' +
+            ' '#39' || cast(:VMAXID as varchar(16)));'
+          'end;')
+        TabOrder = 0
       end
     end
   end
@@ -725,5 +1018,13 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
       Visible = False
       Size = 500
     end
+  end
+  object fodArquivo: TFileOpenDialog
+    DefaultExtension = 'Firebird Database|*.fdb'
+    FavoriteLinks = <>
+    FileTypes = <>
+    Options = []
+    Left = 300
+    Top = 149
   end
 end

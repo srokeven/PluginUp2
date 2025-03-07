@@ -11,10 +11,8 @@ object fmMontarExperssao: TfmMontarExperssao
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = False
   Position = poScreenCenter
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object Panel1: TPanel
     Left = 0
@@ -23,7 +21,8 @@ object fmMontarExperssao: TfmMontarExperssao
     Height = 504
     Align = alClient
     TabOrder = 0
-    ExplicitHeight = 456
+    ExplicitWidth = 880
+    ExplicitHeight = 495
     DesignSize = (
       886
       504)
@@ -104,10 +103,12 @@ object fmMontarExperssao: TfmMontarExperssao
     object mmResultado: TMemo
       Left = 24
       Top = 303
-      Width = 833
+      Width = 827
       Height = 181
       Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 2
+      ExplicitWidth = 821
+      ExplicitHeight = 172
     end
     object edCondicao: TEdit
       Left = 24
@@ -254,12 +255,13 @@ object fmMontarExperssao: TfmMontarExperssao
     Height = 41
     Align = alBottom
     TabOrder = 1
-    ExplicitTop = 456
+    ExplicitTop = 495
+    ExplicitWidth = 880
     DesignSize = (
       886
       41)
     object btnOk: TButton
-      Left = 718
+      Left = 712
       Top = 6
       Width = 75
       Height = 25
@@ -267,9 +269,10 @@ object fmMontarExperssao: TfmMontarExperssao
       Caption = 'Confirmar'
       ModalResult = 1
       TabOrder = 0
+      ExplicitLeft = 706
     end
     object btnCancelar: TButton
-      Left = 799
+      Left = 793
       Top = 6
       Width = 75
       Height = 25
@@ -277,6 +280,7 @@ object fmMontarExperssao: TfmMontarExperssao
       Caption = 'Cancelar'
       ModalResult = 2
       TabOrder = 1
+      ExplicitLeft = 787
     end
   end
 end
