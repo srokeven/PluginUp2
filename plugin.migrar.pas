@@ -95,7 +95,6 @@ type
     procedure btnMoveUpClick(Sender: TObject);
     procedure btnMoveDownClick(Sender: TObject);
     procedure btnExcluirSchemaClick(Sender: TObject);
-    procedure btnVoltarPreferenciasClick(Sender: TObject);
     procedure btnProximoPreferenciasClick(Sender: TObject);
     procedure btnIniciarProcessoClick(Sender: TObject);
     procedure btnTestarBancoDadosClick(Sender: TObject);
@@ -106,6 +105,7 @@ type
     procedure cbTemaSelect(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
     procedure SpeedButton2Click(Sender: TObject);
+    procedure btnVoltarProcessoClick(Sender: TObject);
   private
     flbListaArquivos: TFileSearch;
     procedure VerificarOrigem;
@@ -742,7 +742,7 @@ begin
   pcPrincipal.ActivePage := tsBancos;
 end;
 
-procedure TfmMigrarBancoDados.btnVoltarPreferenciasClick(Sender: TObject);
+procedure TfmMigrarBancoDados.btnVoltarProcessoClick(Sender: TObject);
 begin
   pcPrincipal.ActivePage := tsLista;
 end;

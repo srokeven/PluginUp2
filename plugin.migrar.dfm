@@ -20,7 +20,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
     Top = 0
     Width = 1104
     Height = 556
-    ActivePage = tsProcesso
+    ActivePage = tsLista
     Align = alClient
     TabOrder = 0
     ExplicitWidth = 1098
@@ -661,6 +661,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           Align = alLeft
           Caption = 'Voltar'
           TabOrder = 0
+          OnClick = btnVoltarProcessoClick
         end
         object btnIniciarProcesso: TButton
           AlignWithMargins = True
