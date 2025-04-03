@@ -113,6 +113,8 @@ type
     chkExecucaoIndividual: TCheckBox;
     btnLinkAutomatico: TButton;
     chkInsertIncremental: TCheckBox;
+    lbCamposChaves: TLabel;
+    btnCampoChave: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure fmtTabelasOrigemSELGetText(Sender: TField; var Text: string; DisplayText: Boolean);
@@ -128,6 +130,8 @@ type
     procedure fmtCamposDestinoTIPOGetText(Sender: TField; var Text: string; DisplayText: Boolean);
     procedure btnAlterarWhereClick(Sender: TObject);
     procedure btnLinkAutomaticoClick(Sender: TObject);
+    procedure lbCamposChavesDblClick(Sender: TObject);
+    procedure btnCampoChaveClick(Sender: TObject);
   private
     flbListaArquivos: TFileSearch;
     FLink: TPluginLink;
@@ -166,6 +170,18 @@ implementation
 procedure TfmSchemas.AdicionarLinkCampoLista(ACampoOrigem, ACampoDestino: string);
 begin
   lbListaCamposLink.Items.Add(ACampoOrigem+' --> '+ACampoDestino);
+end;
+
+procedure TfmSchemas.btnCampoChaveClick(Sender: TObject);
+begin
+  if ShowQuestion('Deseja definir o campo '+fmtCamposDestinoCAMPO.AsString+' como Campo Chave?') then
+  begin
+    if lbCamposChaves.Tag = 0 then
+      lbCamposChaves.Caption := fmtCamposDestinoCAMPO.AsString
+    else
+      lbCamposChaves.Caption := lbCamposChaves.Caption + ', ' + fmtCamposDestinoCAMPO.AsString;
+    lbCamposChaves.Tag := 1;
+  end;
 end;
 
 procedure TfmSchemas.btnCancelaCamposLinkClick(Sender: TObject);
@@ -318,6 +334,10 @@ begin
       FLink.SetExecucaoIncremental
     else
       FLink.SetExecucaoPadrao;
+    if lbCamposChaves.Tag = 1 then
+      FLink.SetCamposChaves(lbCamposChaves.Caption)
+    else
+      FLink.SetCamposChaves(EmptyStr);
 
     if FLink.SalvarArquivo(DirSchemasMigracao, IfThen(FLink.NomeArquivo.IsEmpty, FSistemaOrigem+'_'+FLink.TabelaDestino, FLink.NomeArquivo)) then
       ModalResult := mrOk;
@@ -501,6 +521,11 @@ begin
   chkSchemaUpdate.Checked := not (FLink.SchemaInsert);
   chkExecucaoIndividual.Checked := not (FLink.SchemaExecucaoGrupo);
   chkInsertIncremental.Checked := FLink.SchemaExecucaoIncremental;
+  if not (FLink.ListaCamposChaves.IsEmpty) then
+  begin
+    lbCamposChaves.Caption := FLink.ListaCamposChaves;
+    lbCamposChaves.Tag := 1;
+  end;
   pcPrincipal.ActivePage := tsCampos;
 end;
 
@@ -705,6 +730,15 @@ begin
       TDBGrid(Sender).Canvas.Brush.Color:= clHighlight;
     end;
     TDBGrid(Sender).DefaultDrawDataCell(Rect, TDBGrid(Sender).columns[DataCol].Field, State);
+  end;
+end;
+
+procedure TfmSchemas.lbCamposChavesDblClick(Sender: TObject);
+begin
+  if ShowQuestion('Deseja limpar os campos chaves?') then
+  begin
+    lbCamposChaves.Caption := '(Campos chaves)';
+    lbCamposChaves.Tag := 0;
   end;
 end;
 

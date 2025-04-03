@@ -8,7 +8,7 @@ uses
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   Vcl.Grids, Vcl.DBGrids, Vcl.ComCtrls, FileSearchUnit, uUtils, System.StrUtils, plugin.schemas, cxGraphics,
   cxLookAndFeels, cxLookAndFeelPainters, Vcl.Menus, cxButtons, System.JSON, plugin.controller.links,
-  plugin.datamodule, System.IOUtils, Vcl.Themes, Vcl.Buttons;
+  plugin.datamodule, System.IOUtils, Vcl.Themes, Vcl.Buttons, ACBrValidador;
 
 type
   TfmMigrarBancoDados = class(TForm)
@@ -281,8 +281,8 @@ begin
         lConexaoDestino.Select('select * '+
                                'from (select PRO.ID, '+
                                             'PRO.DESCRICAO, '+
-                                            'E.QUANTIDADE_REAL_INICIAL, '+
-                                            'E.QUANTIDADE_REAL, '+
+                                            'E.QUANTIDADE_FISCO_INICIAL, '+
+                                            'E.QUANTIDADE_FISCO, '+
                                             '(select coalesce(sum(MF.QUANTIDADE), 0) '+
                                             'from MOVIMENTO_FISCAL MF '+
                                              'where MF.PRODUTO_ID = PRO.ID and '+
@@ -295,14 +295,14 @@ begin
                                                    'MF.ENTRADA_SAIDA_ESTOQUE = 1) TOTAL_ENTRADAS '+
                                      'from PRODUTOS PRO '+
                                      'join ESTOQUE E on E.PRODUTO_ID = PRO.ID) '+
-                               'where QUANTIDADE_REAL_INICIAL + TOTAL_ENTRADAS - TOTAL_SAIDAS <> QUANTIDADE_REAL', lConexaoDestino.ConexaoDestino);
+                               'where QUANTIDADE_FISCO_INICIAL + TOTAL_ENTRADAS - TOTAL_SAIDAS <> QUANTIDADE_FISCO', lConexaoDestino.ConexaoDestino);
       lJson := TJSONValue.ParseJSONValue(lProdutosInconsistentes) as TJSONArray;
       for I := 0 to lJson.Count - 1 do
       begin
         Log(TextProgressBar(I + 1, lJson.Count), True);
-        if lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) +
+        if lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO_INICIAL', 0) +
            lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) -
-           lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0) > lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0) then //Saida
+           lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0) > lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO', 0) then //Saida
           lConexaoDestino.Execute('insert into MOVIMENTO_FISCAL (PRODUTO_ID, '+
                                                                 'QUANTIDADE, '+
                                                                 'QUANTIDADE_ANTERIOR, '+
@@ -314,8 +314,8 @@ begin
                                                                 'ENTRADA_SAIDA_ESTOQUE, '+
                                                                 'TIPO_MOVIMENTO_FIXO_ID) ' +
                                   'values ('+lJson.Items[I].GetValue<string>('ID', '')+', '+
-                                          FloatToSQLFloat((lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) + lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) - lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0)) - lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0))+', '+
-                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0))+', '+
+                                          FloatToSQLFloat((lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO_INICIAL', 0) + lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) - lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0)) - lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO', 0))+', '+
+                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO', 0))+', '+
                                           'current_timestamp, '+
                                           'current_timestamp, '+
                                           '''AJUSTE DE ESTOQUE INICIAL (SAÍDA)'', ' +
@@ -323,9 +323,9 @@ begin
                                           'null, '+
                                           MOV_SAIDA_STR+', '+
                                           TP_MOVIMENTO_ESTOQUE_AJUSTE.ToString+'); ', lConexaoDestino.ConexaoDestino);
-        if lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) +
+        if lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO_INICIAL', 0) +
            lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) -
-           lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0) < lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0) then //Entrada
+           lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0) < lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO', 0) then //Entrada
           lConexaoDestino.Execute('insert into MOVIMENTO_FISCAL (PRODUTO_ID, '+
                                                                 'QUANTIDADE, '+
                                                                 'QUANTIDADE_ANTERIOR, '+
@@ -337,8 +337,8 @@ begin
                                                                 'ENTRADA_SAIDA_ESTOQUE, '+
                                                                 'TIPO_MOVIMENTO_FIXO_ID) ' +
                                   'values ('+lJson.Items[I].GetValue<string>('ID', '')+', '+
-                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0) - (lJson.Items[I].GetValue<double>('QUANTIDADE_REAL_INICIAL', 0) + lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) - lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0)))+', '+
-                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_REAL', 0))+', '+
+                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO', 0) - (lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO_INICIAL', 0) + lJson.Items[I].GetValue<double>('TOTAL_ENTRADAS', 0) - lJson.Items[I].GetValue<double>('TOTAL_SAIDAS', 0)))+', '+
+                                          FloatToSQLFloat(lJson.Items[I].GetValue<double>('QUANTIDADE_FISCO', 0))+', '+
                                           'current_timestamp, '+
                                           'current_timestamp, '+
                                           '''AJUSTE DE ESTOQUE INICIAL (ENTRADA)'', ' +
@@ -778,7 +778,7 @@ procedure TfmMigrarBancoDados.btnIniciarProcessoClick(Sender: TObject);
 var
   FLink: TPluginLink;
   lConexaoOrigem, lConexaoDestino: TdmConexao;
-  lCaminhoArquivo, lJsonLink, lSqlLink: string;
+  lCaminhoArquivo, lJsonLink, lSqlLink, lCampoChave: string;
   LJSONArray: TJSONArray;
   I: Integer;
 begin
@@ -862,21 +862,113 @@ begin
                 if lConexaoOrigem.QuantidadeUltimaConsulta > 0 then
                 begin
                   Log('Registros consultados: '+lConexaoOrigem.QuantidadeUltimaConsulta.ToString);
-                  lJsonLink := FLink.Salvar;
-                  lSqlLink := IfThen(FLink.SchemaInsert, FLink.GetInsertAll(FLink.SchemaExecucaoIncremental), FLink.GetUpdate);
-                  for I := 0 to LJSONArray.Count - 1 do
+                  if SameText(FLink.TabelaDestino, 'CLIENTES') then
                   begin
-                    Log(TextProgressBar(I + 1, LJSONArray.Count), True);
-                    if not (lConexaoDestino.Executar(lSqlLink,
-                                                     lJsonLink,
-                                                     FLink.TabelaOrigem,
-                                                     cbSistema.Text,
-                                                     FLink.TabelaDestino,
-                                                     lbSistemaDestino.Caption,
-                                                     LJSONArray.Items[I].ToJSON)) then
+                  lJsonLink := FLink.Salvar;
+                    for I := 0 to LJSONArray.Count - 1 do
                     begin
-                      Log('Não foi possivel inserir o dado no destino: '+lConexaoDestino.ErroExecute+'; Objeto:'+LJSONArray.Items[I].ToJSON+' <-- ATENÇÃO');
-                      Log('Continua');
+                      Log(TextProgressBar(I + 1, LJSONArray.Count), True);
+                      lCampoChave := '';
+                      //Valida se tem cpf ou cnpj valido
+                      if LJSONArray.Items[I].GetValue<integer>('TIPOCLIENTE', 0) = 0 then //Pessoa fisica
+                        if ACBrValidador.ValidarCPF(NumbersOnly(LJSONArray.Items[I].GetValue<string>('CPF', '0'))).IsEmpty then //Se não retornar nada então está correto
+                          lCampoChave := 'CPF';
+
+                      if LJSONArray.Items[I].GetValue<integer>('TIPOCLIENTE', 0) = 1 then //Pessoa juridica
+                        if ACBrValidador.ValidarCNPJ(NumbersOnly(LJSONArray.Items[I].GetValue<string>('CNPJ', '0'))).IsEmpty then
+                          lCampoChave := 'CNPJ';
+
+                      if lCampoChave.IsEmpty then
+                        lCampoChave := 'DESCRICAO';
+
+                      lSqlLink := IfThen(FLink.SchemaInsert, FLink.GetInsertPessoa(lCampoChave, FLink.SchemaExecucaoIncremental), FLink.GetUpdate);
+
+                      if not (lConexaoDestino.Executar(lSqlLink,
+                                                       lJsonLink,
+                                                       FLink.TabelaOrigem,
+                                                       cbSistema.Text,
+                                                       FLink.TabelaDestino,
+                                                       lbSistemaDestino.Caption,
+                                                       LJSONArray.Items[I].ToJSON)) then
+                      begin
+                        Log('Não foi possivel inserir o dado no destino: '+lConexaoDestino.ErroExecute+'; Objeto:'+LJSONArray.Items[I].ToJSON+' <-- ATENÇÃO');
+                        Log('Continua');
+                      end;
+                    end;
+                  end
+                  else
+                  if SameText(FLink.TabelaDestino, 'FORNECEDORES') then
+                  begin
+                    lJsonLink := FLink.Salvar;
+                    for I := 0 to LJSONArray.Count - 1 do
+                    begin
+                      Log(TextProgressBar(I + 1, LJSONArray.Count), True);
+                      lCampoChave := '';
+                      //Valida se tem cpf ou cnpj valido
+                      if ACBrValidador.ValidarCPF(NumbersOnly(LJSONArray.Items[I].GetValue<string>('CPF', '0'))).IsEmpty then //Se não retornar nada então está correto
+                        lCampoChave := 'CPF'
+                      else
+                      if ACBrValidador.ValidarCNPJ(NumbersOnly(LJSONArray.Items[I].GetValue<string>('CNPJ', '0'))).IsEmpty then
+                        lCampoChave := 'CNPJ';
+
+                      if lCampoChave.IsEmpty then
+                        lCampoChave := 'RAZAOSOCIAL';
+
+                      lSqlLink := IfThen(FLink.SchemaInsert, FLink.GetInsertPessoa(lCampoChave, FLink.SchemaExecucaoIncremental), FLink.GetUpdate);
+
+                      if not (lConexaoDestino.Executar(lSqlLink,
+                                                       lJsonLink,
+                                                       FLink.TabelaOrigem,
+                                                       cbSistema.Text,
+                                                       FLink.TabelaDestino,
+                                                       lbSistemaDestino.Caption,
+                                                       LJSONArray.Items[I].ToJSON)) then
+                      begin
+                        Log('Não foi possivel inserir o dado no destino: '+lConexaoDestino.ErroExecute+'; Objeto:'+LJSONArray.Items[I].ToJSON+' <-- ATENÇÃO');
+                        Log('Continua');
+                      end;
+                    end;
+                  end
+                  else
+                  if SameText(FLink.TabelaDestino, 'PRODUTOS') then
+                  begin
+                    lJsonLink := FLink.Salvar;
+                    for I := 0 to LJSONArray.Count - 1 do
+                    begin
+                      Log(TextProgressBar(I + 1, LJSONArray.Count), True);
+                      lCampoChave := FLink.ListaCamposChaves;
+                      lSqlLink := IfThen(FLink.SchemaInsert, FLink.GetInsertProduto(lCampoChave, FLink.SchemaExecucaoIncremental), FLink.GetUpdate);
+                      if not (lConexaoDestino.Executar(lSqlLink,
+                                                       lJsonLink,
+                                                       FLink.TabelaOrigem,
+                                                       cbSistema.Text,
+                                                       FLink.TabelaDestino,
+                                                       lbSistemaDestino.Caption,
+                                                       LJSONArray.Items[I].ToJSON)) then
+                      begin
+                        Log('Não foi possivel inserir o dado no destino: '+lConexaoDestino.ErroExecute+'; Objeto:'+LJSONArray.Items[I].ToJSON+' <-- ATENÇÃO');
+                        Log('Continua');
+                      end;
+                    end;
+                  end
+                  else
+                  begin
+                    lJsonLink := FLink.Salvar;
+                    lSqlLink := IfThen(FLink.SchemaInsert, FLink.GetInsertAll(FLink.SchemaExecucaoIncremental), FLink.GetUpdate);
+                    for I := 0 to LJSONArray.Count - 1 do
+                    begin
+                      Log(TextProgressBar(I + 1, LJSONArray.Count), True);
+                      if not (lConexaoDestino.Executar(lSqlLink,
+                                                       lJsonLink,
+                                                       FLink.TabelaOrigem,
+                                                       cbSistema.Text,
+                                                       FLink.TabelaDestino,
+                                                       lbSistemaDestino.Caption,
+                                                       LJSONArray.Items[I].ToJSON)) then
+                      begin
+                        Log('Não foi possivel inserir o dado no destino: '+lConexaoDestino.ErroExecute+'; Objeto:'+LJSONArray.Items[I].ToJSON+' <-- ATENÇÃO');
+                        Log('Continua');
+                      end;
                     end;
                   end;
                 end
@@ -1290,7 +1382,7 @@ begin
                  'C.PRODUTO_ID, ' +
                  'C.CFE_ID, ' +
                  'C.QUANTIDADE, ' +
-                 'E.QUANTIDADE_REAL ' +
+                 'E.QUANTIDADE_FISCO ' +
          'from CFE_PRODUTOS C ' +
          'join CFE on CFE.ID = C.CFE_ID '+
          'left join ESTOQUE E on E.PRODUTO_ID = C.PRODUTO_ID ' +
@@ -1352,7 +1444,7 @@ begin
                  'C.PRODUTO_ID, ' +
                  'C.NFCE_ID, ' +
                  'C.QUANTIDADE, ' +
-                 'E.QUANTIDADE_REAL ' +
+                 'E.QUANTIDADE_FISCO ' +
          'from NFCE_PRODUTOS C ' +
          'join NFCE on NFCE.ID = C.NFCE_ID '+
          'left join ESTOQUE E on E.PRODUTO_ID = C.PRODUTO_ID ' +
@@ -1420,7 +1512,7 @@ begin
                        'P.CFOP, '+
                        'P.NFE_ID, '+
                        'P.QUANTIDADE, '+
-                       'E.QUANTIDADE_REAL '+
+                       'E.QUANTIDADE_FISCO '+
                 'from NFE_PRODUTOS P '+
                 'join NFE on NFE.ID = P.NFE_ID '+
                 'left join ESTOQUE E on E.PRODUTO_ID = P.PRODUTO_ID '+
@@ -1495,7 +1587,7 @@ begin
                  'P.PRODUTO_ID, ' +
                  'P.NOTA_ENTRADA_ID, ' +
                  'P.QUANTIDADE_ENTRA, ' +
-                 'E.QUANTIDADE_REAL ' +
+                 'E.QUANTIDADE_FISCO ' +
          'from PRODUTOS_ENTRADAS P ' +
          'left join ESTOQUE E on E.PRODUTO_ID = P.PRODUTO_ID ' +
          'into :VAR_ID, :VAR_ENTRADA_PRODUTO_ID, :VAR_ENTRADA_ID, :VAR_ENTRADA_QUANTIDADE, :VAR_QUANTIDADE_ATUAL ' +

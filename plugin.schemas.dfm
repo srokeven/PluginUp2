@@ -568,15 +568,15 @@ object fmSchemas: TfmSchemas
           Caption = 'Campo:'
         end
         object Label31: TLabel
-          Left = 8
-          Top = 450
+          Left = 6
+          Top = 452
           Width = 86
           Height = 16
           Caption = 'Express'#227'o livre'
         end
         object Label32: TLabel
-          Left = 100
-          Top = 450
+          Left = 98
+          Top = 452
           Width = 19
           Height = 16
           Cursor = crHelp
@@ -598,17 +598,17 @@ object fmSchemas: TfmSchemas
         end
         object mmExpressaoLivre: TMemo
           Left = 8
-          Top = 472
+          Top = 481
           Width = 193
-          Height = 119
+          Height = 110
           Anchors = [akLeft, akTop, akBottom]
           TabOrder = 1
-          ExplicitHeight = 110
+          ExplicitHeight = 101
         end
         object btnAdicionarLink: TButton
           Left = 6
           Top = 597
-          Width = 194
+          Width = 91
           Height = 28
           Anchors = [akLeft, akBottom]
           Caption = 'Criar link'
@@ -624,8 +624,8 @@ object fmSchemas: TfmSchemas
           ExplicitTop = 588
         end
         object btnGerarExpressao: TButton
-          Left = 125
-          Top = 445
+          Left = 123
+          Top = 448
           Width = 76
           Height = 27
           Caption = 'Gerar'
@@ -638,6 +638,24 @@ object fmSchemas: TfmSchemas
           TabOrder = 3
           StyleElements = []
           OnClick = btnGerarExpressaoClick
+        end
+        object btnCampoChave: TButton
+          Left = 103
+          Top = 597
+          Width = 103
+          Height = 28
+          Anchors = [akLeft, akBottom]
+          Caption = 'Campo chave'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clGreen
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+          TabOrder = 4
+          StyleElements = []
+          OnClick = btnCampoChaveClick
+          ExplicitTop = 588
         end
       end
       object pnlCamposDestino: TPanel
@@ -704,25 +722,46 @@ object fmSchemas: TfmSchemas
           Left = 3
           Top = 3
           Width = 289
-          Height = 506
+          Height = 467
           Align = alClient
           TabOrder = 0
-          ExplicitHeight = 486
+          ExplicitWidth = 283
+          ExplicitHeight = 458
         end
         object Panel3: TPanel
           Left = 0
-          Top = 512
+          Top = 473
           Width = 295
-          Height = 113
+          Height = 152
           Align = alBottom
           BevelOuter = bvNone
           TabOrder = 1
-          object btnSalvarCamposLinks: TButton
+          ExplicitTop = 464
+          ExplicitWidth = 289
+          object lbCamposChaves: TLabel
             AlignWithMargins = True
             Left = 3
             Top = 78
+            Width = 289
+            Height = 16
+            Cursor = crHandPoint
+            Align = alTop
+            Caption = '(Campos chave)'
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -13
+            Font.Name = 'Tahoma'
+            Font.Style = [fsBold]
+            ParentFont = False
+            OnDblClick = lbCamposChavesDblClick
+            ExplicitWidth = 105
+          end
+          object btnSalvarCamposLinks: TButton
+            AlignWithMargins = True
+            Left = 3
+            Top = 100
             Width = 75
-            Height = 32
+            Height = 49
             Align = alLeft
             Caption = 'Salvar'
             Font.Charset = DEFAULT_CHARSET
@@ -733,15 +772,13 @@ object fmSchemas: TfmSchemas
             ParentFont = False
             TabOrder = 0
             OnClick = btnSalvarCamposLinksClick
-            ExplicitTop = 52
-            ExplicitHeight = 42
           end
           object btnAlterarWhere: TButton
             AlignWithMargins = True
             Left = 165
-            Top = 78
+            Top = 100
             Width = 76
-            Height = 32
+            Height = 49
             Align = alLeft
             Caption = '"Where"'
             Font.Charset = DEFAULT_CHARSET
@@ -752,15 +789,13 @@ object fmSchemas: TfmSchemas
             ParentFont = False
             TabOrder = 1
             OnClick = btnAlterarWhereClick
-            ExplicitTop = 52
-            ExplicitHeight = 42
           end
           object btnRemoverLinkCampo: TcxButton
             AlignWithMargins = True
             Left = 216
-            Top = 78
+            Top = 100
             Width = 76
-            Height = 32
+            Height = 49
             Align = alRight
             Caption = 'Remover'
             Colors.Default = clRed
@@ -774,15 +809,13 @@ object fmSchemas: TfmSchemas
             TabOrder = 2
             OnClick = btnRemoverLinkCampoClick
             ExplicitLeft = 210
-            ExplicitTop = 52
-            ExplicitHeight = 42
           end
           object btnCancelaCamposLink: TcxButton
             AlignWithMargins = True
             Left = 84
-            Top = 78
+            Top = 100
             Width = 75
-            Height = 32
+            Height = 49
             Align = alLeft
             Caption = 'Cancelar'
             Colors.Default = clRed
@@ -795,8 +828,6 @@ object fmSchemas: TfmSchemas
             Colors.PressedText = clRed
             TabOrder = 3
             OnClick = btnCancelaCamposLinkClick
-            ExplicitTop = 52
-            ExplicitHeight = 42
           end
           object chkSchemaUpdate: TCheckBox
             AlignWithMargins = True
@@ -831,8 +862,7 @@ object fmSchemas: TfmSchemas
             Caption = 'Schema Incremental'
             Constraints.MaxHeight = 20
             TabOrder = 6
-            ExplicitLeft = 4
-            ExplicitTop = 61
+            ExplicitWidth = 283
           end
         end
       end

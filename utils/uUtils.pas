@@ -57,6 +57,7 @@ uses
   function ExtrairTextoAPartirDePosicao(aTexto, aTrecho: string; aDirecao: integer): string;
   function ExtrairTabelaJoin(ACampo: string): string;
   function ExtrairCampoJoin(ACampo: string): string;
+  function NumbersOnly(const aText: string): string;
 
 const
   LOG_ENTADA = 0;
@@ -636,6 +637,18 @@ begin
   Result := '';
   if Pos('.', ACampo) > 0 then
     Result := ExtrairTextoAPartirDePosicao(ACampo, '.', EXTRAIR_POS_TRECHO);
+end;
+
+function NumbersOnly(const aText: string): string;
+var
+  I: integer;
+  S: string;
+begin
+  S := '';
+  for I := 1 To Length(aText) Do
+    if CharInSet(aText[I], ['0'..'9']) then
+      S := S + Copy(aText, I, 1);
+  Result := S;
 end;
 
 end.

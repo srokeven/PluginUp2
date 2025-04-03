@@ -20,7 +20,7 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
     Top = 0
     Width = 1104
     Height = 556
-    ActivePage = tsLista
+    ActivePage = tsBancos
     Align = alClient
     TabOrder = 0
     ExplicitWidth = 1098
@@ -35,6 +35,8 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
         Height = 54
         Align = alBottom
         TabOrder = 0
+        ExplicitTop = 483
+        ExplicitWidth = 1090
         object btnProximoBancos: TButton
           AlignWithMargins = True
           Left = 9
@@ -55,6 +57,8 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
         Height = 492
         Align = alClient
         TabOrder = 1
+        ExplicitWidth = 1090
+        ExplicitHeight = 483
         object GroupBox1: TGroupBox
           Left = 24
           Top = 23
@@ -715,17 +719,16 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           AlignWithMargins = True
           Left = 4
           Top = 4
-          Width = 1088
+          Width = 20
           Height = 16
           Align = alTop
           Caption = 'Log'
-          ExplicitWidth = 20
         end
         object lbProcessamento: TLabel
           AlignWithMargins = True
           Left = 4
           Top = 472
-          Width = 1088
+          Width = 51
           Height = 16
           Align = alBottom
           Caption = '[ | ]'
@@ -735,7 +738,6 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           Font.Name = 'Courier'
           Font.Style = [fsBold]
           ParentFont = False
-          ExplicitWidth = 51
         end
         object mmLogProcesso: TMemo
           AlignWithMargins = True
@@ -909,10 +911,6 @@ object fmMigrarBancoDados: TfmMigrarBancoDados
           
             '  execute statement('#39'ALTER SEQUENCE CFE_PRODUTOS_ID_SEQ RESTART ' +
             'WITH '#39' || cast(:VMAXID as varchar(16)));'
-          '  select coalesce(max(ID), 0) from CONDUTORES into :VMAXID;'
-          
-            '  execute statement('#39'ALTER SEQUENCE GEN_CONDUTORES_ID RESTART WI' +
-            'TH '#39' || cast(:VMAXID as varchar(16)));'
           '  select coalesce(max(ID), 0) from MDFE into :VMAXID;'
           
             '  execute statement('#39'ALTER SEQUENCE MDFE_ID_SEQ RESTART WITH '#39' |' +

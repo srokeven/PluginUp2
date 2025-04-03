@@ -56,9 +56,12 @@ type
     FNomeArquivo: string;
     FTipoExecucao: string;
     FTipoExecucaoSQL: string;
+    FListaCamposChaves: string;
     function MontaSelect(AIgnoraWhere: boolean = false): string;
     function MontaInsert: string;
     function MontaInsertMigracao(AContinuarSequencia: boolean = False): string;
+    function MontaInsertMigracaoPessoa(ACampoChave: string; AContinuarSequencia: boolean = False): string;
+    function MontaInsertMigracaoProduto(ACampoChave: string; AContinuarSequencia: boolean = False): string;
     function MontaUpdate: string;
   public
     constructor Create;
@@ -73,6 +76,7 @@ type
     property NomeArquivo: string read FNomeArquivo write FNomeArquivo;
     property TipoExecucao: string read FTipoExecucao write FTipoExecucao;
     property TipoExecucaoSQL: string read FTipoExecucaoSQL write FTipoExecucaoSQL;
+    property ListaCamposChaves: string read FListaCamposChaves write FListaCamposChaves;
     function AddLinkFields(ATabelaOrigem, ACampoOrigem, ATipoOrigem, ACampoDestino, ATipoDestino,
       AValorPadrao, APermiteNulo, AMascaraConversao: string; ATamanhoMaximo: integer;
       AChavePrimaria: boolean): boolean;
@@ -88,6 +92,8 @@ type
     function GetSelectAll: string;
     function GetInsert: string;
     function GetInsertAll(AContinuarSequencia: boolean = false): string;
+    function GetInsertPessoa(ACampoChave: string; AContinuarSequencia: boolean = false): string;
+    function GetInsertProduto(ACampoChave: string; AContinuarSequencia: boolean = false): string;
     function GetUpdate: string;
     procedure MontaWhereSelect;
     function AtualizarDataConsulta(ADataConsultas: string): string;
@@ -103,6 +109,7 @@ type
     procedure SetExecucaoEmGrupo;
     procedure SetExecucaoIncremental;
     procedure SetExecucaoPadrao;
+    procedure SetCamposChaves(AListaCamposChaves: string);
   end;
 
 implementation
@@ -225,6 +232,7 @@ begin
   FTipoComando := 'insert';
   FTipoExecucao := 'grupo';
   FTipoExecucaoSQL := 'padrao';
+  FListaCamposChaves := EmptyStr;
 end;
 
 destructor TPluginLink.Destroy;
@@ -283,6 +291,18 @@ end;
 function TPluginLink.GetInsertAll(AContinuarSequencia: boolean = false): string;
 begin
   FInsert := MontaInsertMigracao(AContinuarSequencia);
+  Result := FInsert;
+end;
+
+function TPluginLink.GetInsertPessoa(ACampoChave: string; AContinuarSequencia: boolean): string;
+begin
+  FInsert := MontaInsertMigracaoPessoa(ACampoChave, AContinuarSequencia);
+  Result := FInsert;
+end;
+
+function TPluginLink.GetInsertProduto(ACampoChave: string; AContinuarSequencia: boolean): string;
+begin
+  FInsert := MontaInsertMigracaoProduto(ACampoChave, AContinuarSequencia);
   Result := FInsert;
 end;
 
@@ -357,6 +377,7 @@ begin
   Self.TipoComando := LerJson(AJson, 'comando', 'insert');
   Self.TipoExecucao := LerJson(AJson, 'execucao', 'grupo');
   Self.TipoExecucaoSQL := LerJson(AJson, 'execucaosql', 'padrao');
+  Self.ListaCamposChaves := LerJson(AJson, 'camposchaves', '');
   FreeAndNil(FJoins);
   FJoins := TObjectList<TPluginLinkJoin>.Create;
   FreeAndNil(FLinks);
@@ -457,12 +478,6 @@ begin
                                               .AddPair('key', lKeyField)
                                               .AddPair('key_aux', lKeyAux));
     end;
-//    if lKeyAux.IsEmpty then
-//    begin
-//      lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + lKeyField;
-//      lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + ':'+lKeyField;
-//    end;
-
     lSql := ' insert ';
     lSql := lSql + ' into '+FTabelaDestino+' ('+lSqlFields+') ';
     lSql := lSql + ' values ('+lSqlValues+') ';
@@ -473,10 +488,167 @@ begin
     for I := 0 to FLinks.Count - 1 do
     begin
       lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + FLinks[I].MontaInsert(0);
-      lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + FLinks[I].MontaInsert(1);
+      lTextoSelectField := EmptyStr;
+      if ContainsText(FLinks[I].FMascaraConversao, '/*#') then
+      begin
+        lTextoMascaraSelect := ExtrairTextoAPartirDePosicao(FLinks[I].FMascaraConversao, '#', EXTRAIR_TRECHO);
+        lMascaraCampoOrigem := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_PRE_TRECHO);
+        lMascaraTabela := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_TRECHO);
+        lMarcaraCampoDestino := ExtrairTextoAPartirDePosicao(ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_POS_TRECHO), '-', EXTRAIR_POS_TRECHO);
+        lTextoSelectField := Format('(select first 1 ID from %s where %s = %s)', [lMascaraTabela,
+                                                                                  lMarcaraCampoDestino,
+                                                                                  FLinks[I].MontaInsert(1)]);
+      end;
+      if not (lTextoSelectField.IsEmpty) then
+        lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + lTextoSelectField
+      else
+        lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + FLinks[I].MontaInsert(1);
+
       if not (FLinks[I].MatchingField.IsEmpty) then
         lSqlMatchingField := lSqlMatchingField + IfThen(lSqlMatchingField.IsEmpty, '', ', ') + FLinks[I].MatchingField;
     end;
+    lSql := ' insert ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := 'update or ' + lSql;
+    lSql := lSql + ' into '+FTabelaDestino+' ('+lSqlFields+') ';
+    lSql := lSql + ' values ('+lSqlValues+') ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := lSql + ' matching ('+lSqlMatchingField+') ';
+    Result := lSql;
+  end;
+end;
+
+function TPluginLink.MontaInsertMigracaoPessoa(ACampoChave: string; AContinuarSequencia: boolean): string;
+var
+  lSql, lSqlFields, lSqlValues, lSqlMatchingField, lKeyField, lKeyAux, lTextoMascaraSelect, lMascaraCampoOrigem,
+  lMascaraTabela, lMarcaraCampoDestino, lTextoSelectField: string;
+  I, O: Integer;
+begin
+  if AContinuarSequencia then
+  begin
+    for I := 0 to FLinks.Count - 1 do
+    begin
+      lTextoSelectField := EmptyStr;
+      if FLinks[I].FChavePrimaria then
+      begin
+        lKeyField := FLinks[I].FCampoDestino;
+        Continue;
+      end;
+      if ContainsText(FLinks[I].FCampoDestino, '__FISCAL') then
+        lKeyAux := FLinks[I].FCampoDestino;
+
+      if ContainsText(FLinks[I].FMascaraConversao, '/*#') then
+      begin
+        lTextoMascaraSelect := ExtrairTextoAPartirDePosicao(FLinks[I].FMascaraConversao, '#', EXTRAIR_TRECHO);
+        lMascaraCampoOrigem := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_PRE_TRECHO);
+        lMascaraTabela := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_TRECHO);
+        lMarcaraCampoDestino := ExtrairTextoAPartirDePosicao(ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_POS_TRECHO), '-', EXTRAIR_POS_TRECHO);
+        lTextoSelectField := Format('(select first 1 ID from %s where %s = %s)', [lMascaraTabela,
+                                                                                  lMarcaraCampoDestino,
+                                                                                  FLinks[I].MontaInsert(1)]);
+      end;
+
+      lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + FLinks[I].MontaInsert(0);
+      if not (lTextoSelectField.IsEmpty) then
+        lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + lTextoSelectField
+      else
+        lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + FLinks[I].MontaInsert(1);
+    end;
+    if not (lKeyAux.IsEmpty) then
+    begin
+      FChavesAuxiliares.Add(TJSONObject.Create.AddPair('tabela', FTabelaDestino)
+                                              .AddPair('key', lKeyField)
+                                              .AddPair('key_aux', lKeyAux));
+    end;
+    lSqlMatchingField := ACampoChave;
+    lSql := ' insert ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := 'update or ' + lSql;
+    lSql := lSql + ' into '+FTabelaDestino+' ('+lSqlFields+') ';
+    lSql := lSql + ' values ('+lSqlValues+') ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := lSql + ' matching ('+lSqlMatchingField+') ';
+    Result := lSql;
+  end
+  else
+  begin
+    for I := 0 to FLinks.Count - 1 do
+    begin
+      lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + FLinks[I].MontaInsert(0);
+      lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + FLinks[I].MontaInsert(1);
+    end;
+    lSqlMatchingField := ACampoChave;
+    lSql := ' insert ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := 'update or ' + lSql;
+    lSql := lSql + ' into '+FTabelaDestino+' ('+lSqlFields+') ';
+    lSql := lSql + ' values ('+lSqlValues+') ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := lSql + ' matching ('+lSqlMatchingField+') ';
+    Result := lSql;
+  end;
+end;
+
+function TPluginLink.MontaInsertMigracaoProduto(ACampoChave: string; AContinuarSequencia: boolean): string;
+var
+  lSql, lSqlFields, lSqlValues, lSqlMatchingField, lKeyField, lKeyAux, lTextoMascaraSelect, lMascaraCampoOrigem,
+  lMascaraTabela, lMarcaraCampoDestino, lTextoSelectField: string;
+  I, O: Integer;
+begin
+  if AContinuarSequencia then
+  begin
+    for I := 0 to FLinks.Count - 1 do
+    begin
+      lTextoSelectField := EmptyStr;
+      if FLinks[I].FChavePrimaria then
+      begin
+        lKeyField := FLinks[I].FCampoDestino;
+        Continue;
+      end;
+      if ContainsText(FLinks[I].FCampoDestino, '__FISCAL') then
+        lKeyAux := FLinks[I].FCampoDestino;
+
+      if ContainsText(FLinks[I].FMascaraConversao, '/*#') then
+      begin
+        lTextoMascaraSelect := ExtrairTextoAPartirDePosicao(FLinks[I].FMascaraConversao, '#', EXTRAIR_TRECHO);
+        lMascaraCampoOrigem := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_PRE_TRECHO);
+        lMascaraTabela := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_TRECHO);
+        lMarcaraCampoDestino := ExtrairTextoAPartirDePosicao(ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_POS_TRECHO), '-', EXTRAIR_POS_TRECHO);
+        lTextoSelectField := Format('(select first 1 ID from %s where %s = %s)', [lMascaraTabela,
+                                                                                  lMarcaraCampoDestino,
+                                                                                  FLinks[I].MontaInsert(1)]);
+      end;
+
+      lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + FLinks[I].MontaInsert(0);
+      if not (lTextoSelectField.IsEmpty) then
+        lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + lTextoSelectField
+      else
+        lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + FLinks[I].MontaInsert(1);
+    end;
+    if not (lKeyAux.IsEmpty) then
+    begin
+      FChavesAuxiliares.Add(TJSONObject.Create.AddPair('tabela', FTabelaDestino)
+                                              .AddPair('key', lKeyField)
+                                              .AddPair('key_aux', lKeyAux));
+    end;
+    lSqlMatchingField := ACampoChave;
+    lSql := ' insert ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := 'update or ' + lSql;
+    lSql := lSql + ' into '+FTabelaDestino+' ('+lSqlFields+') ';
+    lSql := lSql + ' values ('+lSqlValues+') ';
+    if not (lSqlMatchingField.IsEmpty) then
+      lSql := lSql + ' matching ('+lSqlMatchingField+') ';
+    Result := lSql;
+  end
+  else
+  begin
+    for I := 0 to FLinks.Count - 1 do
+    begin
+      lSqlFields := lSqlFields + IfThen(lSqlFields.IsEmpty, '', ', ') + FLinks[I].MontaInsert(0);
+      lSqlValues := lSqlValues + IfThen(lSqlValues.IsEmpty, '', ', ') + FLinks[I].MontaInsert(1);
+    end;
+    lSqlMatchingField := ACampoChave;
     lSql := ' insert ';
     if not (lSqlMatchingField.IsEmpty) then
       lSql := 'update or ' + lSql;
@@ -519,11 +691,27 @@ end;
 function TPluginLink.MontaUpdate: string;
 var
   I: integer;
-  lSqlValueToFields, lSql: string;
+  lSqlValueToFields, lSql,
+  lTextoSelectField, lTextoMascaraSelect, lMascaraCampoOrigem, lMascaraTabela, lMarcaraCampoDestino: string;
 begin
   for I := 0 to FLinks.Count - 1 do
+  begin
+    if ContainsText(FLinks[I].FMascaraConversao, '/*#') then
+    begin
+      lTextoMascaraSelect := ExtrairTextoAPartirDePosicao(FLinks[I].FMascaraConversao, '#', EXTRAIR_TRECHO);
+      lMascaraCampoOrigem := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_PRE_TRECHO);
+      lMascaraTabela := ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_TRECHO);
+      lMarcaraCampoDestino := ExtrairTextoAPartirDePosicao(ExtrairTextoAPartirDePosicao(lTextoMascaraSelect, '-', EXTRAIR_POS_TRECHO), '-', EXTRAIR_POS_TRECHO);
+      lTextoSelectField := Format('(select first 1 ID from %s where %s = %s)', [lMascaraTabela,
+                                                                                lMarcaraCampoDestino,
+                                                                                FLinks[I].MontaInsert(1)]);
+    end
+    else
+      lTextoSelectField := FLinks[I].MontaInsert(1);
+
     lSqlValueToFields := lSqlValueToFields + IfThen(lSqlValueToFields.IsEmpty, '', ', ') +
-      FLinks[I].MontaInsert(0) + ' = ' +FLinks[I].MontaInsert(1);
+      FLinks[I].MontaInsert(0) + ' = ' +lTextoSelectField;
+  end;
   lSql := ' update '+FTabelaDestino+' set '+lSqlValueToFields+ ' '+FWhereSelect;
   Result := lSql;
 end;
@@ -575,6 +763,7 @@ begin
     vJsonResposta.AddPair('comando', FTipoComando);
     vJsonResposta.AddPair('execucao', FTipoExecucao);
     vJsonResposta.AddPair('execucaosql', FTipoExecucaoSQL);
+    vJsonResposta.AddPair('camposchaves', FListaCamposChaves);
     vJsonJoins := TJSONArray.Create;
     for I := 0 to FJoins.Count - 1 do
     begin
@@ -621,6 +810,11 @@ end;
 function TPluginLink.SchemaInsert: boolean;
 begin
   Result := FTipoComando = 'insert';
+end;
+
+procedure TPluginLink.SetCamposChaves(AListaCamposChaves: string);
+begin
+  FListaCamposChaves := AListaCamposChaves;
 end;
 
 procedure TPluginLink.SetExecucaoEmGrupo;
